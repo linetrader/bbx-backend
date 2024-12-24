@@ -1,7 +1,10 @@
+// src/users/users.resolver.ts
+
 import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import { User } from './users.schema';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { LoginResponse } from './dto/login-response.dto';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -22,6 +25,22 @@ export class UsersResolver {
     return user;
   }
 
+  @Query(() => String, { nullable: true })
+  async getWalletAddress(
+    @Args('userId') userId: string,
+  ): Promise<string | null> {
+    console.log('Fetching wallet address for userId:', userId);
+    const walletId = await this.usersService.findWalletId(userId);
+    if (!walletId) {
+      throw new BadRequestException('Wallet not found for this user');
+    }
+
+    // Optional: Fetch the wallet address directly
+    const walletAddress = await this.usersService.getWalletAddress(walletId);
+    console.log('Wallet found:', walletAddress);
+    return walletAddress;
+  }
+
   @Mutation(() => String)
   async register(
     @Args('email') email: string,
@@ -29,41 +48,23 @@ export class UsersResolver {
     @Args('firstname') firstname: string,
     @Args('lastname') lastname: string,
     @Args('password') password: string,
-    @Args('referrer', { nullable: true }) referrer?: string, // 추천인 추가
+    @Args('referrer', { nullable: true }) referrer?: string,
   ): Promise<string> {
-    try {
-      return await this.usersService.register({
-        email,
-        username,
-        firstname,
-        lastname,
-        password,
-        referrer,
-      });
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new Error('An unexpected error occurred during registration');
-    }
+    return await this.usersService.register({
+      email,
+      username,
+      firstname,
+      lastname,
+      password,
+      referrer,
+    });
   }
 
-  @Mutation(() => String)
+  @Mutation(() => LoginResponse)
   async login(
     @Args('email') email: string,
     @Args('password') password: string,
-  ): Promise<string> {
-    try {
-      const { token } = await this.usersService.login(email, password);
-      return token;
-    } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new Error('An unexpected error occurred during login');
-    }
+  ): Promise<LoginResponse> {
+    return await this.usersService.login(email, password);
   }
 }

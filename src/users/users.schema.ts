@@ -1,12 +1,14 @@
+// src/users/users.schema.ts
+
 import { Field, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 @Schema()
-@ObjectType() // GraphQL에서 사용될 클래스임을 명시
+@ObjectType()
 export class User extends Document {
   @Prop({ required: true })
-  @Field() // GraphQL 필드로 설정
+  @Field()
   username!: string;
 
   @Prop({ required: true })
@@ -34,8 +36,12 @@ export class User extends Document {
   email_verified!: boolean;
 
   @Prop({ type: String, required: false })
-  @Field({ nullable: true }) // GraphQL에서 선택 사항으로 설정
+  @Field({ nullable: true })
   referrer?: string;
+
+  @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
+  @Field({ nullable: true })
+  walletId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -4,41 +4,27 @@ import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import { User } from './users.schema';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { LoginResponse } from './dto/login-response.dto';
 
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query(() => User)
-  async me(@Context() context: any): Promise<User> {
-    const userId = context.req.user?.id;
-    if (!userId) {
-      throw new UnauthorizedException('Not authenticated');
+  async getUserInfo(@Context() context: any): Promise<User> {
+    const authHeader = context.req.headers.authorization;
+
+    console.log('UsersResolver - getUserInfo : ', authHeader);
+
+    if (!authHeader) {
+      throw new UnauthorizedException('Authorization header is missing.');
     }
 
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.getUserInfo(authHeader);
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
     return user;
-  }
-
-  @Query(() => String, { nullable: true })
-  async getWalletAddress(
-    @Args('userId') userId: string,
-  ): Promise<string | null> {
-    console.log('Fetching wallet address for userId:', userId);
-    const walletId = await this.usersService.findWalletId(userId);
-    if (!walletId) {
-      throw new BadRequestException('Wallet not found for this user');
-    }
-
-    // Optional: Fetch the wallet address directly
-    const walletAddress = await this.usersService.getWalletAddress(walletId);
-    console.log('Wallet found:', walletAddress);
-    return walletAddress;
   }
 
   @Mutation(() => String)
@@ -60,11 +46,21 @@ export class UsersResolver {
     });
   }
 
-  @Mutation(() => LoginResponse)
+  @Mutation(() => String)
   async login(
     @Args('email') email: string,
     @Args('password') password: string,
-  ): Promise<LoginResponse> {
-    return await this.usersService.login(email, password);
+    @Context() context: any,
+  ): Promise<string> {
+    console.log('UsersResolver - Context req.user:', context.req.user);
+    console.log('UsersResolver - Login email:', email, 'password:', password);
+
+    if (context.req.user?.mode === 'login') {
+      const token = await this.usersService.login(email, password);
+      console.log('UsersResolver - Generated Token:', token);
+      return token;
+    }
+
+    throw new Error('Login mode not detected');
   }
 }

@@ -1,23 +1,25 @@
 // src/users/users.service.ts
 
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './users.schema';
-import { Wallet } from '../wallets/wallets.schema'; // Wallet 모델 임포트
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Wallet.name) private readonly walletModel: Model<Wallet>, // Wallet 모델 주입
     private readonly jwtService: JwtService,
   ) {}
 
-  async findById(id: string): Promise<User | null> {
-    const user = await this.userModel.findById(id).exec();
+  async findById(userId: string): Promise<User | null> {
+    const user = await this.userModel.findById(userId).exec();
     if (!user) {
       return null;
     }
@@ -25,19 +27,40 @@ export class UsersService {
     return user;
   }
 
-  async findWalletId(userId: string): Promise<string | null> {
-    const user = await this.userModel.findById(userId).exec();
-
-    if (!user) {
-      throw new BadRequestException('User not found');
+  verifyToken(token: string): { id: string; email: string } {
+    try {
+      return this.jwtService.verify(token) as { id: string; email: string };
+    } catch (err) {
+      console.error('Token verification failed:', err); // 에러 로그
+      throw new BadRequestException('Invalid or expired token.');
     }
-
-    return user.walletId || null; // walletId가 없으면 null 반환
   }
 
-  async getWalletAddress(walletId: string): Promise<string | null> {
-    const wallet = await this.walletModel.findById(walletId).exec();
-    return wallet?.address || null;
+  async getUserInfo(authHeader: string): Promise<User | null> {
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Bearer token is missing.');
+    }
+
+    try {
+      const decoded = this.verifyToken(token); // JWT 토큰 검증
+      console.log('Decoded Token:', decoded);
+
+      const userId = decoded.id;
+      if (!userId) {
+        throw new UnauthorizedException('User ID is missing in token.');
+      }
+
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new BadRequestException('User not found.');
+      }
+
+      return user;
+    } catch (err) {
+      console.error('Error verifying token:', err);
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
   }
 
   async register(userData: Partial<User>): Promise<string> {
@@ -71,25 +94,24 @@ export class UsersService {
     return 'User registered successfully!';
   }
 
-  async login(
-    email: string,
-    password: string,
-  ): Promise<{ token: string; userId: string }> {
+  async login(email: string, password: string): Promise<string> {
+    console.log('UsersService - Received email:', email);
+
     const user = await this.userModel.findOne({ email });
     if (!user) {
+      console.warn('UsersService - Email not found');
       throw new BadRequestException('Email not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.warn('UsersService - Incorrect password for email:', email);
       throw new BadRequestException('Incorrect password');
     }
 
-    const token = this.jwtService.sign({
-      id: (user._id as any).toString(),
-      email: user.email,
-    });
+    const token = this.jwtService.sign({ id: user._id, email: user.email });
+    console.log('UsersService - Generated JWT Token:', token);
 
-    return { token, userId: (user._id as any).toString() };
+    return token;
   }
 }

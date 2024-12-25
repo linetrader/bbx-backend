@@ -4,7 +4,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true }) // timestamps 옵션 활성화
 @ObjectType()
 export class User extends Document {
   @Prop({ required: true })

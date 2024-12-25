@@ -30,6 +30,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "apollo-server-express": "^3.13.0",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "ethers": "^6.13.4",
     "graphql": "^16.10.0",

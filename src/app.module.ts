@@ -31,6 +31,7 @@ import { AuthMiddleware } from './middleware/auth.middleware';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
+      context: ({ req }: { req: Request }) => ({ req }), // req 타입 지정
     }),
 
     // JWT 설정

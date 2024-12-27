@@ -1,4 +1,4 @@
-// src/wallet/wallet.schema.ts
+// src/wallets/wallets.schema.ts
 
 import { ObjectType, Field } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -11,11 +11,15 @@ export class Wallet extends Document {
   @Field()
   address!: string;
 
-  @Prop({ default: '0.0' }) // 기본값 설정
+  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
   @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
   usdtBalance?: string;
 
-  @Prop({ default: '0.0' }) // 기본값 설정
+  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
+  @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
+  dogeBalance?: string;
+
+  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
   @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
   btcBalance?: string;
 

@@ -6,6 +6,7 @@
     "types": ["node"], // 기존 타입과 함께 사용
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "strict": true,

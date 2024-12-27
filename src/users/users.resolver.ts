@@ -13,7 +13,7 @@ export class UsersResolver {
   async getUserInfo(@Context() context: any): Promise<User> {
     const authHeader = context.req.headers.authorization;
 
-    console.log('UsersResolver - getUserInfo : ', authHeader);
+    //console.log('UsersResolver - getUserInfo : ', authHeader);
 
     if (!authHeader) {
       throw new UnauthorizedException('Authorization header is missing.');
@@ -50,17 +50,16 @@ export class UsersResolver {
   async login(
     @Args('email') email: string,
     @Args('password') password: string,
-    @Context() context: any,
   ): Promise<string> {
-    console.log('UsersResolver - Context req.user:', context.req.user);
-    console.log('UsersResolver - Login email:', email, 'password:', password);
+    //console.log('UsersResolver - Context req.user:', context.req.user);
+    //console.log('UsersResolver - Login email:', email, 'password:', password);
 
-    if (context.req.user?.mode === 'login') {
-      const token = await this.usersService.login(email, password);
-      console.log('UsersResolver - Generated Token:', token);
+    const token = await this.usersService.login(email, password);
+    if (token) {
+      //console.log('UsersResolver - Generated Token:', token);
       return token;
     }
 
-    throw new Error('Login mode not detected');
+    throw new UnauthorizedException('UsersResolver - Token Not Found');
   }
 }

@@ -5,11 +5,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { JwtModule } from '@nestjs/jwt';
-
 import { UsersModule } from './users/users.module';
 import { WalletsModule } from './wallets/wallets.module';
-
 import { AuthMiddleware } from './middleware/auth.middleware';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -48,6 +47,7 @@ import { AuthMiddleware } from './middleware/auth.middleware';
     // 사용자 모듈 및 지갑 모듈
     UsersModule,
     WalletsModule,
+    TransactionModule,
   ],
 })
 export class AppModule implements NestModule {

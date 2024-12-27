@@ -30,13 +30,22 @@ export class UsersService {
   verifyToken(token: string): { id: string; email: string } {
     try {
       return this.jwtService.verify(token) as { id: string; email: string };
-    } catch (err) {
-      console.error('Token verification failed:', err); // 에러 로그
-      throw new BadRequestException('Invalid or expired token.');
+    } catch (error) {
+      const err = error as Error; // 강제 타입 단언
+      if (err.name === 'TokenExpiredError') {
+        throw new UnauthorizedException(
+          'Token has expired. Please log in again.',
+        );
+      }
+      throw new BadRequestException('Invalid token.');
     }
   }
 
   async getUserInfo(authHeader: string): Promise<User | null> {
+    if (!authHeader) {
+      throw new UnauthorizedException('No Authorization header found.');
+    }
+
     const token = authHeader.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('Bearer token is missing.');
@@ -44,7 +53,7 @@ export class UsersService {
 
     try {
       const decoded = this.verifyToken(token); // JWT 토큰 검증
-      console.log('Decoded Token:', decoded);
+      //console.log('Decoded Token:', decoded);
 
       const userId = decoded.id;
       if (!userId) {
@@ -95,7 +104,7 @@ export class UsersService {
   }
 
   async login(email: string, password: string): Promise<string> {
-    console.log('UsersService - Received email:', email);
+    //console.log('UsersService - Received email:', email);
 
     const user = await this.userModel.findOne({ email });
     if (!user) {
@@ -110,7 +119,7 @@ export class UsersService {
     }
 
     const token = this.jwtService.sign({ id: user._id, email: user.email });
-    console.log('UsersService - Generated JWT Token:', token);
+    //console.log('UsersService - Generated JWT Token:', token);
 
     return token;
   }

@@ -1,6 +1,6 @@
-// src/wallet/wallet.resolver.ts
+// src/wallets/wallets.resolver.ts
 
-import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
+import { Resolver, Mutation, Query, Context } from '@nestjs/graphql';
 import { WalletsService } from './wallets.service';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { Wallet } from './wallets.schema';
@@ -12,8 +12,7 @@ export class WalletsResolver {
   @Query(() => Wallet)
   async getWalletInfo(@Context() context: any): Promise<Wallet> {
     const authHeader = context.req.headers.authorization;
-
-    console.log('WalletsResolver - getWalletInfo:', authHeader);
+    //console.log('WalletsResolver - getWalletInfo:', authHeader);
 
     if (!authHeader) {
       throw new UnauthorizedException('Authorization header is missing.');
@@ -24,7 +23,7 @@ export class WalletsResolver {
       throw new BadRequestException('Wallet not found.');
     }
 
-    console.log('Wallet fetched successfully:', wallet);
+    //console.log('Wallet fetched successfully:', wallet);
     return wallet;
   }
 
@@ -40,21 +39,6 @@ export class WalletsResolver {
 
     //console.log('Wallet found:', walletAddress);
     return walletAddress;
-  }
-
-  @Query(() => String, { nullable: true })
-  async getUSDTBalanceBscScan(
-    @Args('userId') userId: string,
-  ): Promise<string | null> {
-    //console.log('Fetching wallet address for userId:', userId);
-    // Optional: Fetch the wallet address directly
-    const usdtBalance = await this.walletService.getUSDTBalanceBscScan(userId);
-    if (!usdtBalance) {
-      throw new BadRequestException('USDT not found for this user');
-    }
-
-    //console.log('USDT Balance:', usdtBalance);
-    return usdtBalance;
   }
 
   @Mutation(() => Wallet)

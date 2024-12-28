@@ -1,32 +1,34 @@
 // src/wallets/wallets.schema.ts
 
-import { ObjectType, Field } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 
-@Schema({ timestamps: true }) // timestamps 옵션 활성화
+@Schema()
 @ObjectType()
 export class Wallet extends Document {
+  @Field(() => ID)
+  id!: string;
+
   @Prop({ required: true })
   @Field()
   address!: string;
 
-  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
-  @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
-  usdtBalance?: string;
-
-  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
-  @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
-  dogeBalance?: string;
-
-  @Prop({ default: '0.000000000000000000' }) // 기본값 설정
-  @Field({ nullable: true }) // GraphQL에서 선택적으로 처리
-  btcBalance?: string;
-
-  @Prop({ required: true }) // userId로 관계 설정
+  @Prop({ required: true })
   @Field()
   userId!: string;
+
+  @Prop({ required: true, type: Number, default: 0.0 })
+  @Field()
+  usdtBalance!: number;
+
+  @Prop({ required: true, type: Number, default: 0.0 })
+  @Field()
+  dogeBalance!: number;
+
+  @Prop({ required: true, type: Number, default: 0.0 })
+  @Field()
+  btcBalance!: number;
 }
 
-// WalletSchema 생성 및 export
 export const WalletSchema = SchemaFactory.createForClass(Wallet);

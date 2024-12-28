@@ -49,10 +49,7 @@ export class WalletsResolver {
       throw new UnauthorizedException('Authorization header is missing.');
     }
 
-    const wallet = await this.walletService.createWallet(
-      authHeader,
-      context.req.user,
-    );
+    const wallet = await this.walletService.createWallet(authHeader);
     if (!wallet) {
       throw new BadRequestException('Failed to create wallet.');
     }

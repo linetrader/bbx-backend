@@ -1,0 +1,74 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  username: String!
+  firstname: String!
+  lastname: String!
+  email: String!
+  password: String!
+  status: String
+  email_verified: Boolean!
+  referrer: String
+  walletId: String
+
+  """User Level"""
+  userLevel: Float!
+}
+
+type Wallet {
+  id: ID!
+  address: String!
+  userId: String!
+  usdtBalance: Float!
+  dogeBalance: Float!
+  btcBalance: Float!
+}
+
+type Transaction {
+  type: String!
+  amount: String!
+  token: String!
+  transactionHash: String!
+  userId: String!
+  walletId: String!
+  createdAt: String!
+}
+
+type Package {
+  id: ID!
+  name: String!
+  price: Float!
+  status: String!
+}
+
+type PurchaseRecord {
+  packageName: String!
+  quantity: Float!
+  totalPrice: Float!
+  userId: String!
+  createdAt: String!
+}
+
+type Query {
+  getUserInfo: User!
+  getWalletInfo: Wallet!
+  getWalletAddress: String
+
+  """Fetch all transactions for the user"""
+  getTransactionList: [Transaction!]!
+  getPackages: [Package!]!
+
+  """Fetch all transactions for the user"""
+  getPurchaseRecords: [PurchaseRecord!]!
+}
+
+type Mutation {
+  register(email: String!, username: String!, firstname: String!, lastname: String!, password: String!, referrer: String): String!
+  login(email: String!, password: String!): String!
+  createWallet: Wallet!
+  addPackage(name: String!, price: Float!, status: String!): Package!
+  changePackage(name: String!, price: Float!, status: String!): Package!
+  purchasePackage(packageId: String!, quantity: Int!): String!
+}

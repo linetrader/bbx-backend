@@ -42,6 +42,10 @@ export class User extends Document {
   @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
   @Field({ nullable: true })
   walletId?: string;
+
+  @Prop({ type: Number, default: 7 }) // 기본값: 일반회원
+  @Field({ description: 'User Level', defaultValue: 7 })
+  userLevel!: number; // 슈퍼 어드민(1) ~ 일반회원(7)
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

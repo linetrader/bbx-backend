@@ -30,6 +30,10 @@ export class Transaction extends Document {
   @Prop({ required: true })
   @Field()
   walletId!: string;
+
+  // createdAt 필드를 GraphQL로 노출
+  @Field(() => String)
+  createdAt!: Date;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

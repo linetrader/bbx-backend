@@ -60,35 +60,24 @@ export class WalletsService {
     setInterval(async () => {
       const wallets = await this.walletModel.find().exec();
 
-      //console.log('startMonitoringDeposits - wallets : ', wallets);
-
       for (const wallet of wallets) {
         try {
-          const { balance: currentBalance, transactionHash: hash } =
+          const { balance: currentBalanceRaw, transactionHash: hash } =
             await this.getUSDTBalanceBscScan(wallet);
-          const previousBalance = parseFloat(wallet.usdtBalance || '0').toFixed(
-            6,
-          );
 
-          console.log(
-            'currentBalance : ',
-            currentBalance,
-            'previousBalance : ',
-            previousBalance,
-          );
+          // 소수점 6자리에서 자르기
+          const currentBalance = parseFloat(currentBalanceRaw.toFixed(6));
+          const previousBalance = parseFloat(wallet.usdtBalance.toFixed(6));
 
           if (currentBalance !== previousBalance) {
-            // Step 2: Update DB with current balance
             wallet.usdtBalance = currentBalance;
             await wallet.save();
 
-            // Step 3: Log deposit transaction
-            const amountDeposited = (
-              parseFloat(currentBalance) - parseFloat(previousBalance)
-            ).toFixed(6);
+            const amountDeposited = parseFloat(
+              (currentBalance - previousBalance).toFixed(6),
+            );
 
-            if (parseFloat(amountDeposited) > 0) {
-              console.log('amountDeposited : ', amountDeposited);
+            if (amountDeposited > 0) {
               await this.transactionModel.create({
                 type: 'deposit',
                 amount: amountDeposited,
@@ -98,7 +87,6 @@ export class WalletsService {
                 walletId: wallet._id,
               });
 
-              // Step 4: Notify frontend
               this.walletsGateway.notifyDeposit(
                 wallet.address,
                 amountDeposited,
@@ -114,7 +102,8 @@ export class WalletsService {
 
   private savePrivateKeyToFile(walletId: string, privateKey: string): void {
     try {
-      const filePath = this.privateKeyFilePath;
+      //const filePath = this.privateKeyFilePath; // 프로덕트
+      const filePath = path.resolve(process.cwd(), 'privateKey.json'); // .env 파일과 동일한 디렉토리 기준으로 경로 설정
 
       // 기존 데이터 읽기 (파일이 존재하지 않으면 빈 객체로 시작)
       const existingData = fs.existsSync(filePath)
@@ -170,6 +159,7 @@ export class WalletsService {
 
     const wallet = await this.walletModel.findOne({ userId }).exec();
     if (!wallet) {
+      console.log('Wallet not found:');
       throw new BadRequestException('Wallet not found.');
     }
 
@@ -177,19 +167,7 @@ export class WalletsService {
     return wallet;
   }
 
-  async createWallet(
-    authHeader: string,
-    user?: { id?: string; mode?: string },
-  ): Promise<Wallet> {
-    if (user?.mode === 'login') {
-      const newToken = this.jwtService.sign({
-        id: 'new_user_id',
-        email: 'user@example.com',
-      });
-      //console.log('Generated New Token:', newToken);
-      throw new UnauthorizedException(`New token generated: ${newToken}`);
-    }
-
+  async createWallet(authHeader: string): Promise<Wallet> {
     const token = authHeader.split(' ')[1];
     const decoded = this.jwtService.verify(token);
     const userId = decoded.id;
@@ -203,9 +181,9 @@ export class WalletsService {
     const newWallet = await this.walletModel.create({
       address: wallet.address,
       userId,
-      usdtBalance: '0.0',
-      dogeBalance: '0.0',
-      btcBalance: '0.0',
+      usdtBalance: 0, // 초기값 숫자로 설정
+      dogeBalance: 0,
+      btcBalance: 0,
     });
 
     this.savePrivateKeyToFile(String(newWallet._id), wallet.privateKey);
@@ -266,25 +244,15 @@ export class WalletsService {
 
   async getUSDTBalanceBscScan(
     wallet: Wallet,
-  ): Promise<{ balance: string; transactionHash: string }> {
+  ): Promise<{ balance: number; transactionHash: string }> {
     if (!wallet || !wallet.address) {
-      console.error(
-        `Invalid wallet object or missing address. Wallet: ${JSON.stringify(
-          wallet,
-        )}`,
-      );
       throw new BadRequestException(
         'Wallet object is invalid or address is missing.',
       );
     }
 
     try {
-      // Fetch USDT balance
       const response = await axios.get(this.bscScanApiUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-        },
         params: {
           module: 'account',
           action: 'tokenbalance',
@@ -296,10 +264,6 @@ export class WalletsService {
       });
 
       if (response.data.status !== '1') {
-        console.warn(
-          `Failed to fetch balance for wallet ${wallet.address}. Response: `,
-          response.data,
-        );
         throw new BadRequestException(
           response.data.message || 'Failed to fetch data from BscScan.',
         );
@@ -307,39 +271,16 @@ export class WalletsService {
 
       const balanceInWei = response.data.result;
       const decimals = 18;
-      const formattedBalance = (
-        parseFloat(balanceInWei) /
-        10 ** decimals
-      ).toFixed(6);
+      const formattedBalance =
+        Math.floor((parseFloat(balanceInWei) / 10 ** decimals) * 1e6) / 1e6; // 6자리 정밀도 유지
 
-      // Fetch transaction logs
       const logsResponse = await this.getTransactionsByAddress(wallet.address);
-
-      if (logsResponse.length === 0) {
-        console.warn(
-          `No transactions found for wallet ${wallet.address}. Returning default hash.`,
-        );
-        return { balance: formattedBalance, transactionHash: 'unknown-hash' };
-      }
-
-      const latestTransaction = logsResponse[0]; // Get the most recent transaction
+      const latestTransaction = logsResponse[0];
       const transactionHash = latestTransaction?.hash || 'unknown-hash';
 
-      console.log(
-        `USDT balance for wallet ${wallet.address}: ${formattedBalance}, Transaction Hash: ${transactionHash}`,
-      );
       return { balance: formattedBalance, transactionHash };
-    } catch (error: any) {
-      console.error(
-        `Error fetching USDT balance for wallet ${wallet.address}:`,
-        error.message,
-      );
-
-      if (error.response) {
-        //console.error('API Response Error:', error.response.data);
-        console.error('API Response Error:');
-      }
-
+    } catch (error) {
+      console.error(`Error occurred: ${(error as Error).message}`);
       throw new BadRequestException('Failed to fetch USDT balance.');
     }
   }

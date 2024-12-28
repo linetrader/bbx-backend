@@ -18,7 +18,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async findById(userId: string): Promise<User | null> {
+  async findUserById(userId: string): Promise<User | null> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       return null;
@@ -60,7 +60,7 @@ export class UsersService {
         throw new UnauthorizedException('User ID is missing in token.');
       }
 
-      const user = await this.findById(userId);
+      const user = await this.findUserById(userId);
       if (!user) {
         throw new BadRequestException('User not found.');
       }

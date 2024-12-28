@@ -13,5 +13,6 @@ import { WalletsModule } from 'src/wallets/wallets.module';
     WalletsModule, // WalletsModule 추가
   ],
   providers: [UsersService, UsersResolver],
+  exports: [MongooseModule, UsersService], // UserModel을 외부에 내보내기 위해 MongooseModule을 exports
 })
 export class UsersModule {}

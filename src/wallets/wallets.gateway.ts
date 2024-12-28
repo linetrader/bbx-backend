@@ -26,7 +26,7 @@ export class WalletsGateway
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  notifyDeposit(walletAddress: string, amount: string) {
+  notifyDeposit(walletAddress: string, amount: number) {
     this.server?.emit('usdtDeposit', { walletAddress, amount });
   }
 }

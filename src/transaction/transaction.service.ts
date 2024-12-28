@@ -37,6 +37,19 @@ export class TransactionService {
     const decoded = this.verifyToken(token);
     const userId = decoded.id;
 
-    return this.transactionModel.find({ userId: userId }).exec();
+    // 사용자 ID로 트랜잭션 조회 및 반환
+    const transactions = await this.transactionModel
+      .find({ userId: userId })
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .exec();
+
+    // createdAt 확인을 위해 출력
+    // transactions.forEach((transaction) => {
+    //   console.log(
+    //     `Transaction ID: ${transaction.id}, Created At: ${transaction.createdAt}`,
+    //   );
+    // });
+
+    return transactions;
   }
 }

@@ -9,6 +9,9 @@ import { UsersModule } from './users/users.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { TransactionModule } from './transaction/transaction.module';
+import { PackageModule } from './package/package.module';
+import { PurchaseRecordModule } from './purchase-record/purchase-record.module';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -29,7 +32,7 @@ import { TransactionModule } from './transaction/transaction.module';
     // GraphQL 설정
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: true,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'), // 스키마 파일 자동 생성
       context: ({ req }: { req: Request }) => ({ req }), // req 타입 지정
     }),
 
@@ -48,6 +51,8 @@ import { TransactionModule } from './transaction/transaction.module';
     UsersModule,
     WalletsModule,
     TransactionModule,
+    PackageModule,
+    PurchaseRecordModule,
   ],
 })
 export class AppModule implements NestModule {

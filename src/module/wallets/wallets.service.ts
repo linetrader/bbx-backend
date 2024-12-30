@@ -224,19 +224,26 @@ export class WalletsService {
     const decoded = this.jwtService.verify(token);
     const userId = decoded.id;
 
+    console.log('createWallet - userId : ', userId);
+
     const existingWallet = await this.walletModel.findOne({ userId }).exec();
     if (existingWallet) {
       return existingWallet;
     }
 
+    console.log('createWallet - existingWallet : ', existingWallet);
+
     const wallet = ethers.Wallet.createRandom();
     const newWallet = await this.walletModel.create({
       address: wallet.address,
+      whitdrawAddress: '0x',
       userId,
       usdtBalance: 0, // 초기값 숫자로 설정
       dogeBalance: 0,
       btcBalance: 0,
     });
+
+    console.log('createWallet - newWallet : ', newWallet);
 
     this.savePrivateKeyToFile(String(newWallet._id), wallet.privateKey);
 
@@ -271,10 +278,10 @@ export class WalletsService {
       });
 
       if (response.data.status !== '1') {
-        console.warn(
-          `Failed to fetch transactions for address ${address}. Response:`,
-          response.data,
-        );
+        // console.warn(
+        //   `Failed to fetch transactions for address ${address}. Response:`,
+        //   response.data,
+        // );
         // No transactions found
         return [];
       }

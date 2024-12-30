@@ -5,7 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersService } from './users.service';
 import { UsersResolver } from './users.resolver';
 import { User, UserSchema } from './users.schema';
-import { WalletsModule } from 'src/wallets/wallets.module';
+import { WalletsModule } from 'src/module/wallets/wallets.module';
 
 @Module({
   imports: [

@@ -9,8 +9,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Package } from './package.schema';
 import { JwtService } from '@nestjs/jwt';
-import { User } from 'src/users/users.schema';
-import { UsersService } from 'src/users/users.service';
+import { User } from 'src/module/users/users.schema';
+import { UsersService } from 'src/module/users/users.service';
 
 @Injectable()
 export class PackageService {

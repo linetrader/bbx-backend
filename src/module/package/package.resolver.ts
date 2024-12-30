@@ -7,11 +7,7 @@ import { UnauthorizedException } from '@nestjs/common';
 
 @Resolver(() => Package)
 export class PackageResolver {
-  constructor(
-    private readonly packageService: PackageService,
-    //private readonly jwtService: JwtService,
-    //private readonly userService: UsersService, // 유저 서비스 주입
-  ) {}
+  constructor(private readonly packageService: PackageService) {}
 
   @Query(() => [Package])
   async getPackages(@Context() context: any): Promise<Package[]> {

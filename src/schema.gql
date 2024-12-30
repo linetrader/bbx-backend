@@ -20,6 +20,7 @@ type User {
 type Wallet {
   id: ID!
   address: String!
+  whitdrawAddress: String!
   userId: String!
   usdtBalance: Float!
   dogeBalance: Float!
@@ -36,11 +37,16 @@ type Transaction {
   createdAt: String!
 }
 
-type Package {
-  id: ID!
-  name: String!
-  price: Float!
-  status: String!
+type GoogleOTP {
+  email: String!
+  otpSecret: String!
+  isOtpEnabled: Boolean!
+  createdAt: String!
+}
+
+type GenerateOtpOutput {
+  qrCode: String!
+  manualKey: String!
 }
 
 type PurchaseRecord {
@@ -51,6 +57,22 @@ type PurchaseRecord {
   createdAt: String!
 }
 
+type Package {
+  id: ID!
+  name: String!
+  price: Float!
+  status: String!
+}
+
+type WithdrawList {
+  email: String!
+  currency: String!
+  amount: Float!
+  status: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Query {
   getUserInfo: User!
   getWalletInfo: Wallet!
@@ -58,17 +80,25 @@ type Query {
 
   """Fetch all transactions for the user"""
   getTransactionList: [Transaction!]!
+  getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
 
   """Fetch all transactions for the user"""
   getPurchaseRecords: [PurchaseRecord!]!
+  getPendingWithdrawals: [WithdrawList!]!
 }
 
 type Mutation {
   register(email: String!, username: String!, firstname: String!, lastname: String!, password: String!, referrer: String): String!
   login(email: String!, password: String!): String!
   createWallet: Wallet!
+  generateOTP: GenerateOtpOutput!
+  verifyAndSaveOTP(otp: String!): Boolean!
+  verifyOnlyOTP(otp: String!): Boolean!
   addPackage(name: String!, price: Float!, status: String!): Package!
   changePackage(name: String!, price: Float!, status: String!): Package!
   purchasePackage(packageId: String!, quantity: Int!): String!
+  requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
+  approveWithdrawal(withdrawalId: String!): Boolean!
+  rejectWithdrawal(withdrawalId: String!, remarks: String): Boolean!
 }

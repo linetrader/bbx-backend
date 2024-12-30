@@ -11,7 +11,7 @@ import {
   TransactionSchema,
 } from '../transaction/transaction.schema';
 import { TransactionModule } from '../transaction/transaction.module';
-import { UsersModule } from 'src/users/users.module';
+import { UsersModule } from 'src/module/users/users.module';
 
 @Module({
   imports: [

@@ -13,6 +13,6 @@ import { Transaction, TransactionSchema } from './transaction.schema';
     ]),
   ],
   providers: [TransactionService, TransactionResolver],
-  exports: [MongooseModule], // MongooseModule 내보내기
+  exports: [MongooseModule, TransactionService], // MongooseModule 내보내기
 })
 export class TransactionModule {}

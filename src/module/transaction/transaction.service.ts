@@ -1,10 +1,6 @@
 // src/transaction/transaction.service.ts
 
-import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Transaction } from './transaction.schema';
@@ -18,23 +14,9 @@ export class TransactionService {
     private readonly jwtService: JwtService,
   ) {}
 
-  verifyToken(token: string): { id: string; email: string } {
-    try {
-      return this.jwtService.verify(token) as { id: string; email: string };
-    } catch (error) {
-      const err = error as Error;
-      if (err.name === 'TokenExpiredError') {
-        throw new UnauthorizedException(
-          'Token has expired. Please log in again.',
-        );
-      }
-      throw new BadRequestException('Invalid token.');
-    }
-  }
-
   async getTransactionsByUser(authHeader: string): Promise<Transaction[]> {
     const token = authHeader.split(' ')[1];
-    const decoded = this.verifyToken(token);
+    const decoded = this.jwtService.verify(token);
     const userId = decoded.id;
 
     // 사용자 ID로 트랜잭션 조회 및 반환
@@ -51,5 +33,17 @@ export class TransactionService {
     // });
 
     return transactions;
+  }
+
+  async createTransaction(data: {
+    type: string;
+    amount: number;
+    token: string;
+    transactionHash: string;
+    userId: string;
+    walletId: string;
+  }): Promise<void> {
+    const transaction = new this.transactionModel(data);
+    await transaction.save();
   }
 }

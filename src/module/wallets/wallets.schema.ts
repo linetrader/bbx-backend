@@ -16,6 +16,10 @@ export class Wallet extends Document {
 
   @Prop({ required: true })
   @Field()
+  whitdrawAddress!: string;
+
+  @Prop({ required: true })
+  @Field()
   userId!: string;
 
   @Prop({ required: true, type: Number, default: 0.0 })

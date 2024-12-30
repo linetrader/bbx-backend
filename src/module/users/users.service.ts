@@ -18,8 +18,8 @@ export class UsersService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async findUserById(userId: string): Promise<User | null> {
-    const user = await this.userModel.findById(userId).exec();
+  async findUserByEmail(email: string): Promise<User | null> {
+    const user = await this.userModel.findOne({ email }).exec();
     if (!user) {
       return null;
     }
@@ -27,18 +27,13 @@ export class UsersService {
     return user;
   }
 
-  verifyToken(token: string): { id: string; email: string } {
-    try {
-      return this.jwtService.verify(token) as { id: string; email: string };
-    } catch (error) {
-      const err = error as Error; // 강제 타입 단언
-      if (err.name === 'TokenExpiredError') {
-        throw new UnauthorizedException(
-          'Token has expired. Please log in again.',
-        );
-      }
-      throw new BadRequestException('Invalid token.');
+  async findUserById(userId: string): Promise<User | null> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      return null;
     }
+
+    return user;
   }
 
   async getUserInfo(authHeader: string): Promise<User | null> {
@@ -52,7 +47,7 @@ export class UsersService {
     }
 
     try {
-      const decoded = this.verifyToken(token); // JWT 토큰 검증
+      const decoded = this.jwtService.verify(token); // JWT 토큰 검증
       //console.log('Decoded Token:', decoded);
 
       const userId = decoded.id;

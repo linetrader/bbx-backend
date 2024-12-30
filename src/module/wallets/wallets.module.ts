@@ -5,9 +5,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { WalletsService } from './wallets.service';
 import { WalletsResolver } from './wallets.resolver';
 import { Wallet, WalletSchema } from './wallets.schema';
-import { User, UserSchema } from '../users/users.schema';
 import { WalletsGateway } from './wallets.gateway';
-import { TransactionModule } from 'src/transaction/transaction.module';
+import { TransactionModule } from 'src/module/transaction/transaction.module';
+import { GoogleOTPModule } from 'src/module/google-otp/google-otp.module';
+import { User, UserSchema } from '../users/users.schema';
 
 @Module({
   imports: [
@@ -16,8 +17,9 @@ import { TransactionModule } from 'src/transaction/transaction.module';
       { name: User.name, schema: UserSchema },
     ]),
     TransactionModule,
+    GoogleOTPModule,
   ],
   providers: [WalletsService, WalletsResolver, WalletsGateway],
-  exports: [MongooseModule], // WalletModel 내보내기
+  exports: [MongooseModule, WalletsService], // WalletModel 내보내기
 })
 export class WalletsModule {}

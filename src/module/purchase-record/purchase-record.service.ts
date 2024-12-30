@@ -9,9 +9,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PurchaseRecord } from './purchase-record.schema'; // PurchaseRecord 스키마 import
 import { JwtService } from '@nestjs/jwt';
-import { Wallet } from 'src/wallets/wallets.schema';
-import { User } from 'src/users/users.schema';
-import { Package } from 'src/package/package.schema';
+import { Wallet } from 'src/module/wallets/wallets.schema';
+import { User } from 'src/module/users/users.schema';
+import { Package } from 'src/module/package/package.schema';
 
 @Injectable()
 export class PurchaseRecordService {
@@ -85,26 +85,12 @@ export class PurchaseRecordService {
     return `Purchase of ${quantity} ${selectedPackage.name}(s) approved.`;
   }
 
-  verifyToken(token: string): { id: string; email: string } {
-    try {
-      return this.jwtService.verify(token) as { id: string; email: string };
-    } catch (error) {
-      const err = error as Error;
-      if (err.name === 'TokenExpiredError') {
-        throw new UnauthorizedException(
-          'Token has expired. Please log in again.',
-        );
-      }
-      throw new BadRequestException('Invalid token.');
-    }
-  }
-
   // 특정 사용자 구매 기록 조회
   async getPurchaseRecordsByUser(
     authHeader: string,
   ): Promise<PurchaseRecord[]> {
     const token = authHeader.split(' ')[1];
-    const decoded = this.verifyToken(token);
+    const decoded = this.jwtService.verify(token);
     const userId = decoded.id;
 
     return this.purchaseRecordModel

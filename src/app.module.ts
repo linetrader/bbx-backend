@@ -5,13 +5,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { JwtModule } from '@nestjs/jwt';
-import { UsersModule } from './users/users.module';
-import { WalletsModule } from './wallets/wallets.module';
+import { UsersModule } from './module/users/users.module';
+import { WalletsModule } from './module/wallets/wallets.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
-import { TransactionModule } from './transaction/transaction.module';
-import { PackageModule } from './package/package.module';
-import { PurchaseRecordModule } from './purchase-record/purchase-record.module';
+import { TransactionModule } from './module/transaction/transaction.module';
+import { PurchaseRecordModule } from './module/purchase-record/purchase-record.module';
 import { join } from 'path';
+import { GoogleOTPModule } from './module/google-otp/google-otp.module';
+import { WithdrawListModule } from './module/withdraw-list/withdraw-list.module';
+import { PackageModule } from './module/package/package.module';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { join } from 'path';
     MongooseModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
+        authSource: 'admin', // 관리자 인증이 필요함을 명시
       }),
       inject: [ConfigService],
     }),
@@ -53,6 +56,8 @@ import { join } from 'path';
     TransactionModule,
     PackageModule,
     PurchaseRecordModule,
+    GoogleOTPModule,
+    WithdrawListModule,
   ],
 })
 export class AppModule implements NestModule {

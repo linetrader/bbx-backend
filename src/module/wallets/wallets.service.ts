@@ -15,7 +15,8 @@ import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { WalletsGateway } from './wallets.gateway';
-import { Transaction } from 'src/transaction/transaction.schema';
+import { TransactionService } from 'src/module/transaction/transaction.service';
+import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
 
 @Injectable()
 export class WalletsService {
@@ -27,11 +28,11 @@ export class WalletsService {
   constructor(
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet & Document>,
-    @InjectModel(Transaction.name)
-    private readonly transactionModel: Model<Transaction & Document>,
+    private readonly transactionService: TransactionService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly walletsGateway: WalletsGateway,
+    private readonly googleOtpService: GoogleOTPService,
   ) {
     this.bscScanApiUrl =
       this.configService.get<string>('BSC_SCAN_API_URL') || '';
@@ -78,14 +79,17 @@ export class WalletsService {
             );
 
             if (amountDeposited > 0) {
-              await this.transactionModel.create({
-                type: 'deposit',
-                amount: amountDeposited,
-                token: 'USDT',
-                transactionHash: hash,
-                userId: wallet.userId,
-                walletId: wallet._id,
-              });
+              if (wallet._id) {
+                const tempWalletId = wallet._id.toString();
+                await this.transactionService.createTransaction({
+                  type: 'deposit',
+                  amount: amountDeposited,
+                  token: 'USDT',
+                  transactionHash: hash,
+                  userId: wallet.userId,
+                  walletId: tempWalletId,
+                });
+              }
 
               this.walletsGateway.notifyDeposit(
                 wallet.address,
@@ -127,18 +131,36 @@ export class WalletsService {
     }
   }
 
-  verifyToken(token: string): { id: string; email: string } {
-    try {
-      return this.jwtService.verify(token) as { id: string; email: string };
-    } catch (error) {
-      const err = error as Error; // 강제 타입 단언
-      if (err.name === 'TokenExpiredError') {
-        throw new UnauthorizedException(
-          'Token has expired. Please log in again.',
-        );
-      }
-      throw new BadRequestException('Invalid token.');
+  async adjustBalance(
+    userId: string,
+    token: string,
+    amount: number,
+  ): Promise<boolean> {
+    const wallet = await this.walletModel.findOne({ userId }).exec();
+    if (!wallet) {
+      return false;
     }
+
+    console.log(
+      'adjustBalance - token, amount, wallet.usdtBalance : ',
+      token,
+      amount,
+      wallet.usdtBalance,
+    );
+
+    // 잔액 업데이트
+    if (token === 'USDT' && wallet.usdtBalance > amount) {
+      wallet.usdtBalance = wallet.usdtBalance - amount;
+    } else if (token === 'BTC' && wallet.btcBalance > amount) {
+      wallet.btcBalance = wallet.btcBalance - amount;
+    } else if (token === 'DOGE' && wallet.dogeBalance > amount) {
+      wallet.dogeBalance = wallet.dogeBalance - amount;
+    } else {
+      return false;
+    }
+
+    await wallet.save();
+    return true;
   }
 
   async findWalletById(userId: string): Promise<Wallet | null> {
@@ -150,9 +172,39 @@ export class WalletsService {
     return wallet;
   }
 
+  async saveWithdrawAddress(
+    authHeader: string,
+    newAddress: string,
+    otp: string,
+  ): Promise<boolean> {
+    const token = authHeader.split(' ')[1];
+    const decoded = this.jwtService.verify(token);
+    const userId = decoded.id;
+
+    const wallet = await this.walletModel.findOne({ userId }).exec();
+    if (!wallet) {
+      console.log('Wallet not found:');
+      throw new BadRequestException('Wallet not found.');
+    }
+
+    // OTP 검증
+    const isValidOtp = await this.googleOtpService.verifyOnly(
+      decoded.email,
+      otp,
+    );
+    if (!isValidOtp) {
+      throw new UnauthorizedException('saveWithdrawAddress - Invalid OTP.');
+    }
+
+    wallet.whitdrawAddress = newAddress;
+    wallet.save();
+
+    return true;
+  }
+
   async getWalletInfo(authHeader: string): Promise<Wallet> {
     const token = authHeader.split(' ')[1];
-    const decoded = this.verifyToken(token);
+    const decoded = this.jwtService.verify(token);
     const userId = decoded.id;
 
     //console.log('WalletService - Decoded User ID:', userId);

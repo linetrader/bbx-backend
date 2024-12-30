@@ -14,12 +14,23 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly jwtService: JwtService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
+    // console.log(
+    //   'AuthMiddleware - Incoming Authorization Header:',
+    //   req.headers.authorization,
+    // );
+
     const authHeader = req.headers.authorization;
-    //console.log('AuthMiddleware - authHeader:', authHeader);
 
     if (!authHeader) {
       console.warn('No Authorization header found');
       req.user = undefined;
+      return next();
+    }
+
+    if (authHeader === 'login') {
+      //console.log('AuthMiddleware - Login mode detected');
+      req.user = { mode: 'login' };
+      //console.log('AuthMiddleware - Updated req.user:', req.user);
       return next();
     }
 

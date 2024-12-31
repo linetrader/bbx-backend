@@ -36,6 +36,7 @@ export class PackageResolver {
   async changePackage(
     @Args('name') name: string,
     @Args('price') price: number,
+    @Args('miningInterval') miningInterval: number,
     @Args('status') status: string,
     @Context() context: any,
   ): Promise<Package> {
@@ -46,6 +47,11 @@ export class PackageResolver {
         'You are not authorized to change package prices.',
       );
     }
-    return this.packageService.changePackage(name, price, status);
+    return this.packageService.changePackage(
+      name,
+      price,
+      miningInterval,
+      status,
+    );
   }
 }

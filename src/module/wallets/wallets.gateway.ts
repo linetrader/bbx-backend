@@ -27,6 +27,15 @@ export class WalletsGateway
   }
 
   notifyDeposit(walletAddress: string, amount: number) {
-    this.server?.emit('usdtDeposit', { walletAddress, amount });
+    if (!this.server) {
+      console.error('WebSocket server is not initialized.');
+      return;
+    }
+
+    console.log(
+      `Emitting 'usdtDeposit' event to all clients: Wallet Address: ${walletAddress}, Amount: ${amount}`,
+    );
+
+    this.server.emit('usdtDeposit', { walletAddress, amount });
   }
 }

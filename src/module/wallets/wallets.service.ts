@@ -11,20 +11,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document } from 'mongoose';
 import { ethers } from 'ethers';
 import { Wallet } from './wallets.schema';
-import axios from 'axios';
+//import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { WalletsGateway } from './wallets.gateway';
 import { TransactionService } from 'src/module/transaction/transaction.service';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
+import { MonitoringService } from './monitoring/monitoring.service';
 
 @Injectable()
 export class WalletsService {
-  private readonly bscScanApiUrl: string;
-  private readonly bscUsdtContractAddress: string;
-  private readonly bscScanApiKey: string;
-  private readonly privateKeyFilePath: string;
-
   constructor(
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet & Document>,
@@ -33,75 +29,10 @@ export class WalletsService {
     private readonly jwtService: JwtService,
     private readonly walletsGateway: WalletsGateway,
     private readonly googleOtpService: GoogleOTPService,
+    private readonly monitoringService: MonitoringService,
   ) {
-    this.bscScanApiUrl =
-      this.configService.get<string>('BSC_SCAN_API_URL') || '';
-    this.bscUsdtContractAddress =
-      this.configService.get<string>('BSC_USDT_CONTRACT_ADDRESS') || '';
-    this.bscScanApiKey =
-      this.configService.get<string>('BSC_SCAN_API_KEY') || '';
-
-    this.privateKeyFilePath =
-      path.join(__dirname, '..', 'privateKey.json') || '';
-
-    if (
-      !this.bscScanApiUrl ||
-      !this.bscUsdtContractAddress ||
-      !this.bscScanApiKey
-    ) {
-      throw new BadRequestException(
-        'Missing necessary BSC configuration in environment variables.',
-      );
-    }
-
-    this.startMonitoringDeposits();
-  }
-
-  private async startMonitoringDeposits(): Promise<void> {
-    setInterval(async () => {
-      const wallets = await this.walletModel.find().exec();
-
-      for (const wallet of wallets) {
-        try {
-          const { balance: currentBalanceRaw, transactionHash: hash } =
-            await this.getUSDTBalanceBscScan(wallet);
-
-          // 소수점 6자리에서 자르기
-          const currentBalance = parseFloat(currentBalanceRaw.toFixed(6));
-          const previousBalance = parseFloat(wallet.usdtBalance.toFixed(6));
-
-          if (currentBalance !== previousBalance) {
-            wallet.usdtBalance = currentBalance;
-            await wallet.save();
-
-            const amountDeposited = parseFloat(
-              (currentBalance - previousBalance).toFixed(6),
-            );
-
-            if (amountDeposited > 0) {
-              if (wallet._id) {
-                const tempWalletId = wallet._id.toString();
-                await this.transactionService.createTransaction({
-                  type: 'deposit',
-                  amount: amountDeposited,
-                  token: 'USDT',
-                  transactionHash: hash,
-                  userId: wallet.userId,
-                  walletId: tempWalletId,
-                });
-              }
-
-              this.walletsGateway.notifyDeposit(
-                wallet.address,
-                amountDeposited,
-              );
-            }
-          }
-        } catch (error) {
-          console.error(`Error monitoring wallet ${wallet.address}:`, error);
-        }
-      }
-    }, 120000); // 120 seconds interval
+    this.monitoringService.startMonitoringDeposits();
+    //this.monitoringService.testMonitoring();
   }
 
   private savePrivateKeyToFile(walletId: string, privateKey: string): void {
@@ -129,47 +60,6 @@ export class WalletsService {
       console.error('Error saving private key to file:', error);
       throw new BadRequestException('Failed to save private key.');
     }
-  }
-
-  async adjustBalance(
-    userId: string,
-    token: string,
-    amount: number,
-  ): Promise<boolean> {
-    const wallet = await this.walletModel.findOne({ userId }).exec();
-    if (!wallet) {
-      return false;
-    }
-
-    console.log(
-      'adjustBalance - token, amount, wallet.usdtBalance : ',
-      token,
-      amount,
-      wallet.usdtBalance,
-    );
-
-    // 잔액 업데이트
-    if (token === 'USDT' && wallet.usdtBalance > amount) {
-      wallet.usdtBalance = wallet.usdtBalance - amount;
-    } else if (token === 'BTC' && wallet.btcBalance > amount) {
-      wallet.btcBalance = wallet.btcBalance - amount;
-    } else if (token === 'DOGE' && wallet.dogeBalance > amount) {
-      wallet.dogeBalance = wallet.dogeBalance - amount;
-    } else {
-      return false;
-    }
-
-    await wallet.save();
-    return true;
-  }
-
-  async findWalletById(userId: string): Promise<Wallet | null> {
-    const wallet = await this.walletModel.findOne({ userId }).exec();
-    if (!wallet) {
-      return null;
-    }
-
-    return wallet;
   }
 
   async saveWithdrawAddress(
@@ -202,21 +92,38 @@ export class WalletsService {
     return true;
   }
 
-  async getWalletInfo(authHeader: string): Promise<Wallet> {
-    const token = authHeader.split(' ')[1];
-    const decoded = this.jwtService.verify(token);
-    const userId = decoded.id;
+  async getWalletInfo(authHeader: string): Promise<Wallet | null> {
+    try {
+      if (!authHeader) {
+        throw new UnauthorizedException('Authorization header is missing.');
+      }
 
-    //console.log('WalletService - Decoded User ID:', userId);
+      const token = authHeader.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Bearer token is missing.');
+      }
 
-    const wallet = await this.walletModel.findOne({ userId }).exec();
-    if (!wallet) {
-      console.log('Wallet not found:');
-      throw new BadRequestException('Wallet not found.');
+      // 1. userId 추출
+      const decoded = this.jwtService.verify(token); // JWT 토큰 검증
+      const userId = decoded.id;
+      if (!userId) {
+        throw new UnauthorizedException('User not found.');
+      }
+      //console.log('WalletService - Decoded User ID:', userId);
+
+      const wallet = await this.walletModel.findOne({ userId }).exec();
+      if (!wallet) {
+        console.log('Wallet not found:');
+        throw new BadRequestException('Wallet not found.');
+      }
+
+      //console.log('Wallet found:', wallet);
+      return wallet;
+    } catch (error) {
+      //throw new BadRequestException('Failed Wallet.');
+      //console.log(error);
+      return null;
     }
-
-    //console.log('Wallet found:', wallet);
-    return wallet;
   }
 
   async createWallet(authHeader: string): Promise<Wallet> {
@@ -253,94 +160,5 @@ export class WalletsService {
   async getWalletAddress(userId: string): Promise<string | null> {
     const wallet = await this.walletModel.findOne({ userId }).exec();
     return wallet ? wallet.address : null;
-  }
-
-  async getTransactionsByAddress(address: string): Promise<any[]> {
-    if (!address) {
-      throw new BadRequestException('Wallet address is required.');
-    }
-
-    try {
-      const response = await axios.get(this.bscScanApiUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-        },
-        params: {
-          module: 'account',
-          action: 'txlist',
-          address,
-          startblock: 0,
-          endblock: 99999999,
-          sort: 'desc',
-          apikey: this.bscScanApiKey,
-        },
-      });
-
-      if (response.data.status !== '1') {
-        // console.warn(
-        //   `Failed to fetch transactions for address ${address}. Response:`,
-        //   response.data,
-        // );
-        // No transactions found
-        return [];
-      }
-
-      return response.data.result;
-    } catch (error: any) {
-      console.error(
-        `Error fetching transactions for wallet ${address}:`,
-        error.message,
-      );
-
-      if (error.response) {
-        console.error('API Response Error:', error.response.data);
-      }
-
-      throw new BadRequestException('Failed to fetch transactions.');
-    }
-  }
-
-  async getUSDTBalanceBscScan(
-    wallet: Wallet,
-  ): Promise<{ balance: number; transactionHash: string }> {
-    if (!wallet || !wallet.address) {
-      throw new BadRequestException(
-        'Wallet object is invalid or address is missing.',
-      );
-    }
-
-    try {
-      const response = await axios.get(this.bscScanApiUrl, {
-        params: {
-          module: 'account',
-          action: 'tokenbalance',
-          contractaddress: this.bscUsdtContractAddress,
-          address: wallet.address,
-          tag: 'latest',
-          apikey: this.bscScanApiKey,
-        },
-      });
-
-      if (response.data.status !== '1') {
-        throw new BadRequestException(
-          response.data.message || 'Failed to fetch data from BscScan.',
-        );
-      }
-
-      const balanceInWei = response.data.result;
-      const decimals = 18;
-      const formattedBalance =
-        Math.floor((parseFloat(balanceInWei) / 10 ** decimals) * 1e6) / 1e6; // 6자리 정밀도 유지
-
-      const logsResponse = await this.getTransactionsByAddress(wallet.address);
-      const latestTransaction = logsResponse[0];
-      const transactionHash = latestTransaction?.hash || 'unknown-hash';
-
-      return { balance: formattedBalance, transactionHash };
-    } catch (error) {
-      console.error(`Error occurred: ${(error as Error).message}`);
-      throw new BadRequestException('Failed to fetch USDT balance.');
-    }
   }
 }

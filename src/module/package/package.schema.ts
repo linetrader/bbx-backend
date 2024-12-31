@@ -18,6 +18,14 @@ export class Package extends Document {
   @Field()
   price!: number;
 
+  @Prop({ required: true })
+  @Field()
+  miningInterval!: number; // 초
+
+  @Prop({ required: true })
+  @Field()
+  miningProfit!: number; // 상품 1개당 나오는 코인 수량
+
   @Prop({ required: true, default: 'hide' })
   @Field()
   status!: string; // "show" or "hide"

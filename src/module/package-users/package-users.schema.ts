@@ -11,6 +11,10 @@ export class PackageUsers extends Document {
   @Field()
   userId!: string;
 
+  @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
+  @Field({ nullable: true })
+  walletId?: string;
+
   @Prop({ required: true })
   @Field()
   packageType!: string; // btc, doge
@@ -18,6 +22,10 @@ export class PackageUsers extends Document {
   @Prop({ required: true, type: Number })
   @Field()
   quantity!: number;
+
+  @Prop({ required: true })
+  @Field()
+  miningBalance!: number; // 마이닝 된 수량 (누적)
 
   @Field(() => String)
   createdAt!: Date;

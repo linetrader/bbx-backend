@@ -8,6 +8,15 @@ import { PackageUsers } from './package-users.schema';
 export class PackageUsersResolver {
   constructor(private readonly packageUsersService: PackageUsersService) {}
 
+  // 3. 유저의 패키지 마이닝 수량 조회
+  @Query(() => [PackageUsers])
+  async getUserMiningData(
+    @Context() context: any,
+  ): Promise<PackageUsers[] | null> {
+    const authHeader = context.req.headers.authorization;
+    return this.packageUsersService.getUserPackages(authHeader);
+  }
+
   // 1. 패키지 구매
   @Mutation(() => String)
   async purchasePackage(
@@ -21,12 +30,5 @@ export class PackageUsersResolver {
       packageId,
       quantity,
     );
-  }
-
-  // 3. 유저의 패키지 수량 조회
-  @Query(() => [PackageUsers])
-  async getUserPackages(@Context() context: any): Promise<PackageUsers[]> {
-    const authHeader = context.req.headers.authorization;
-    return this.packageUsersService.getUserPackages(authHeader);
   }
 }

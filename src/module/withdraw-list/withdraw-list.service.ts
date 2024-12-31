@@ -13,17 +13,21 @@ import { UsersService } from 'src/module/users/users.service';
 import { TransactionService } from 'src/module/transaction/transaction.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { JwtService } from '@nestjs/jwt';
+import { PackageUsersService } from '../package-users/package-users.service';
 
 @Injectable()
 export class WithdrawListService {
   constructor(
     @InjectModel(WithdrawList.name)
     private readonly withdrawListModel: Model<WithdrawList>,
+
     private readonly googleOtpService: GoogleOTPService,
+    private readonly jwtService: JwtService,
+
     private readonly userService: UsersService,
     private readonly transactionService: TransactionService,
     private readonly walletService: WalletsService, // WalletService 주입
-    private readonly jwtService: JwtService,
+    private readonly packageUsersService: PackageUsersService,
   ) {}
 
   async getPendingWithdrawals(token: string): Promise<WithdrawList[]> {
@@ -168,7 +172,7 @@ export class WithdrawListService {
     amount: number,
   ): Promise<boolean> {
     try {
-      const walletUpdateResult = await this.walletService.adjustBalance(
+      const walletUpdateResult = await this.packageUsersService.adjustBalance(
         email,
         currency,
         amount,

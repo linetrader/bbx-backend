@@ -9,7 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PackageRecord } from './package-record.schema'; // PackageRecord 스키마 import
 import { JwtService } from '@nestjs/jwt';
-import { Wallet } from 'src/module/wallets/wallets.schema';
+//import { Wallet } from 'src/module/wallets/wallets.schema';
 import { User } from 'src/module/users/users.schema';
 import { Package } from 'src/module/package/package.schema';
 
@@ -22,8 +22,8 @@ export class PackageRecordService {
     private readonly userModel: Model<User>, // 올바른 주입
     @InjectModel(Package.name)
     private readonly packageModel: Model<Package>, // 올바른 주입
-    @InjectModel(Wallet.name)
-    private readonly walletModel: Model<Wallet>, // 누락된 의존성 추가
+    // @InjectModel(Wallet.name)
+    // private readonly walletModel: Model<Wallet>, // 누락된 의존성 추가
     private readonly jwtService: JwtService,
   ) {}
 
@@ -36,53 +36,6 @@ export class PackageRecordService {
   }): Promise<PackageRecord> {
     const newRecord = new this.packageRecordModel(createRecordDto);
     return newRecord.save();
-  }
-
-  async purchasePackage(
-    authHeader: string,
-    packageId: string,
-    quantity: number,
-  ): Promise<string> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = this.jwtService.verify(token);
-    const userId = decoded.id;
-
-    // 1. 사용자의 지갑 확인
-    const userWallet = await this.walletModel.findOne({ userId }).exec();
-    if (!userWallet) {
-      throw new BadRequestException('User wallet not found.');
-    }
-
-    // 2. 패키지 유효성 검사
-    const selectedPackage = await this.packageModel.findById(packageId).exec();
-    if (!selectedPackage) {
-      throw new BadRequestException('Selected package not found.');
-    }
-
-    const totalPrice = selectedPackage.price * quantity;
-
-    // 3. 결제 가능 여부 확인
-    if (userWallet.usdtBalance < totalPrice) {
-      throw new BadRequestException('Insufficient balance.');
-    }
-
-    // 4. 잔액 업데이트
-    userWallet.usdtBalance -= totalPrice;
-    await userWallet.save();
-
-    // 5. 구매 기록 생성 요청
-    await this.createPackageRecord({
-      userId,
-      packageName: selectedPackage.name,
-      quantity,
-      totalPrice,
-    });
-
-    return `Package of ${quantity} ${selectedPackage.name}(s) approved.`;
   }
 
   // 특정 사용자 구매 기록 조회

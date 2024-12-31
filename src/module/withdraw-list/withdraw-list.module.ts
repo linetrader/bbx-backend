@@ -9,6 +9,7 @@ import { GoogleOTPModule } from '../google-otp/google-otp.module';
 import { UsersModule } from '../users/users.module';
 import { TransactionModule } from '../transaction/transaction.module';
 import { WalletsModule } from 'src/module/wallets/wallets.module';
+import { PackageUsersModule } from '../package-users/package-users.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WalletsModule } from 'src/module/wallets/wallets.module';
     UsersModule,
     TransactionModule,
     WalletsModule,
+    PackageUsersModule,
   ],
   providers: [WithdrawListResolver, WithdrawListService],
 })

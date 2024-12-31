@@ -4,6 +4,7 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -12,14 +13,23 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/module/users/users.schema';
 import { UsersService } from 'src/module/users/users.service';
 
+import { seedInitialPackages } from './initial-packages.seed';
+
 @Injectable()
-export class PackageService {
+export class PackageService implements OnModuleInit {
   constructor(
     @InjectModel(Package.name) private readonly packageModel: Model<Package>,
     @InjectModel(User.name) private readonly userModel: Model<User>, // User 모델 추가
     private readonly jwtService: JwtService,
     private readonly userService: UsersService, // 유저 서비스 주입
   ) {}
+
+  // 모듈 초기화 시 호출
+  async onModuleInit() {
+    //console.log('Seeding initial packages...');
+    await seedInitialPackages(this.packageModel);
+    //console.log('Seeding completed.');
+  }
 
   async verifyAdmin(authHeader: string): Promise<boolean> {
     if (!authHeader) {
@@ -93,6 +103,7 @@ export class PackageService {
   async changePackage(
     name: string,
     price: number,
+    miningInterval: number,
     status: string,
   ): Promise<Package> {
     const findPackage = await this.packageModel.findOne({ name }).exec();
@@ -100,6 +111,7 @@ export class PackageService {
       throw new BadRequestException('Package not found.');
     }
     findPackage.price = price;
+    findPackage.miningInterval = miningInterval;
     findPackage.status = status;
     return findPackage.save();
   }

@@ -17,6 +17,9 @@ import { PackageModule } from './module/package/package.module';
 import { PackageUsersModule } from './module/package-users/package-users.module';
 import { PackageRecordModule } from './module/package-record/package-record.module';
 
+import { MiningModule } from './module/mining/mining.module';
+import { MiningRecordModule } from './module/mining-record/mining-record.module';
+
 @Module({
   imports: [
     // 환경 변수 설정
@@ -61,6 +64,8 @@ import { PackageRecordModule } from './module/package-record/package-record.modu
     PackageRecordModule,
     GoogleOTPModule,
     WithdrawListModule,
+    MiningModule,
+    MiningRecordModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -5,9 +5,27 @@ import { Model } from 'mongoose';
 
 export async function seedInitialPackages(packageModel: Model<Package>) {
   const initialPackages = [
-    { name: 'BTC Mining Rig', price: 430 },
-    { name: 'DOGE Mining Rig', price: 430 },
-    { name: 'BBX Coin', price: 1 },
+    {
+      name: 'BTC',
+      price: 1,
+      miningInterval: 60,
+      miningProfit: 0.000013,
+      status: 'show',
+    },
+    {
+      name: 'DOGE',
+      price: 1,
+      miningInterval: 60,
+      miningProfit: 4.0,
+      status: 'show',
+    },
+    {
+      name: 'BBX',
+      price: 1,
+      miningInterval: 60, // 추가
+      miningProfit: 0.00001, // 추가
+      status: 'hide', // 필요 시 추가
+    },
   ];
 
   for (const pkg of initialPackages) {

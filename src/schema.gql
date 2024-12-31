@@ -23,8 +23,6 @@ type Wallet {
   whitdrawAddress: String!
   userId: String!
   usdtBalance: Float!
-  dogeBalance: Float!
-  btcBalance: Float!
 }
 
 type Transaction {
@@ -58,18 +56,22 @@ type WithdrawList {
   updatedAt: String!
 }
 
+type PackageUsers {
+  userId: String!
+  walletId: String
+  packageType: String!
+  quantity: Float!
+  miningBalance: Float!
+  createdAt: String!
+}
+
 type Package {
   id: ID!
   name: String!
   price: Float!
+  miningInterval: Float!
+  miningProfit: Float!
   status: String!
-}
-
-type PackageUsers {
-  userId: String!
-  packageType: String!
-  quantity: Float!
-  createdAt: String!
 }
 
 type PackageRecord {
@@ -89,7 +91,7 @@ type Query {
   getTransactionList: [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
-  getUserPackages: [PackageUsers!]!
+  getUserMiningData: [PackageUsers!]!
 
   """Fetch all transactions for the user"""
   getPackageRecords: [PackageRecord!]!
@@ -104,7 +106,7 @@ type Mutation {
   verifyAndSaveOTP(otp: String!): Boolean!
   verifyOnlyOTP(otp: String!): Boolean!
   addPackage(name: String!, price: Float!, status: String!): Package!
-  changePackage(name: String!, price: Float!, status: String!): Package!
+  changePackage(name: String!, price: Float!, miningInterval: Float!, status: String!): Package!
   purchasePackage(packageId: String!, quantity: Int!): String!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!

@@ -46,4 +46,12 @@ export class TransactionService {
     const transaction = new this.transactionModel(data);
     await transaction.save();
   }
+
+  // 새로운 함수 추가: 특정 트랜잭션 해시 존재 여부 확인
+  async checkTransactionHashExists(transactionHash: string): Promise<boolean> {
+    const existingTransaction = await this.transactionModel
+      .findOne({ transactionHash })
+      .exec();
+    return !!existingTransaction; // 존재하면 true, 없으면 false
+  }
 }

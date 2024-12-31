@@ -25,14 +25,6 @@ export class Wallet extends Document {
   @Prop({ required: true, type: Number, default: 0.0 })
   @Field()
   usdtBalance!: number;
-
-  @Prop({ required: true, type: Number, default: 0.0 })
-  @Field()
-  dogeBalance!: number;
-
-  @Prop({ required: true, type: Number, default: 0.0 })
-  @Field()
-  btcBalance!: number;
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);

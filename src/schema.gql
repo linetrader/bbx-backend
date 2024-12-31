@@ -49,12 +49,13 @@ type GenerateOtpOutput {
   manualKey: String!
 }
 
-type PurchaseRecord {
-  packageName: String!
-  quantity: Float!
-  totalPrice: Float!
-  userId: String!
+type WithdrawList {
+  email: String!
+  currency: String!
+  amount: Float!
+  status: String!
   createdAt: String!
+  updatedAt: String!
 }
 
 type Package {
@@ -64,13 +65,19 @@ type Package {
   status: String!
 }
 
-type WithdrawList {
-  email: String!
-  currency: String!
-  amount: Float!
-  status: String!
+type PackageUsers {
+  userId: String!
+  packageType: String!
+  quantity: Float!
   createdAt: String!
-  updatedAt: String!
+}
+
+type PackageRecord {
+  packageName: String!
+  quantity: Float!
+  totalPrice: Float!
+  userId: String!
+  createdAt: String!
 }
 
 type Query {
@@ -82,9 +89,10 @@ type Query {
   getTransactionList: [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
+  getUserPackages: [PackageUsers!]!
 
   """Fetch all transactions for the user"""
-  getPurchaseRecords: [PurchaseRecord!]!
+  getPackageRecords: [PackageRecord!]!
   getPendingWithdrawals: [WithdrawList!]!
 }
 

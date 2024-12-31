@@ -1,4 +1,4 @@
-// src/package/purchase-record.schema.ts
+// src/package/package-record.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ObjectType, Field } from '@nestjs/graphql';
@@ -6,7 +6,7 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 @ObjectType()
-export class PurchaseRecord extends Document {
+export class PackageRecord extends Document {
   @Prop({ required: true })
   @Field()
   packageName!: string;
@@ -27,5 +27,4 @@ export class PurchaseRecord extends Document {
   createdAt!: Date;
 }
 
-export const PurchaseRecordSchema =
-  SchemaFactory.createForClass(PurchaseRecord);
+export const PackageRecordSchema = SchemaFactory.createForClass(PackageRecord);

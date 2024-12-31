@@ -5,8 +5,8 @@ import { Model } from 'mongoose';
 
 export async function seedInitialPackages(packageModel: Model<Package>) {
   const initialPackages = [
-    { name: 'BTC Mining Rig', price: 1000 },
-    { name: 'DOGE Mining Rig', price: 500 },
+    { name: 'BTC Mining Rig', price: 430 },
+    { name: 'DOGE Mining Rig', price: 430 },
     { name: 'BBX Coin', price: 1 },
   ];
 

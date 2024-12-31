@@ -9,11 +9,13 @@ import { UsersModule } from './module/users/users.module';
 import { WalletsModule } from './module/wallets/wallets.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { TransactionModule } from './module/transaction/transaction.module';
-import { PurchaseRecordModule } from './module/purchase-record/purchase-record.module';
 import { join } from 'path';
 import { GoogleOTPModule } from './module/google-otp/google-otp.module';
 import { WithdrawListModule } from './module/withdraw-list/withdraw-list.module';
+
 import { PackageModule } from './module/package/package.module';
+import { PackageUsersModule } from './module/package-users/package-users.module';
+import { PackageRecordModule } from './module/package-record/package-record.module';
 
 @Module({
   imports: [
@@ -55,7 +57,8 @@ import { PackageModule } from './module/package/package.module';
     WalletsModule,
     TransactionModule,
     PackageModule,
-    PurchaseRecordModule,
+    PackageUsersModule,
+    PackageRecordModule,
     GoogleOTPModule,
     WithdrawListModule,
   ],

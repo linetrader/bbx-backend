@@ -53,11 +53,16 @@ export class PackageService {
       const decoded = this.jwtService.verify(token);
       const user = await this.userService.findUserById(decoded.id);
 
+      //console.log(user);
+
       if (!user) {
         throw new UnauthorizedException('User not found.');
       }
 
-      return this.packageModel.find({ status: 'show' }).exec();
+      const packages = await this.packageModel.find({ status: 'show' }).exec();
+      //console.log(packages);
+
+      return packages;
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error(`Error verifying token: ${error.message}`);

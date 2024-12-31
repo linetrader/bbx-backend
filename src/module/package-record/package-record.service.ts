@@ -1,4 +1,4 @@
-// src/purchase-record/purchase-record.service.ts
+// src/package-record/package-record.service.ts
 
 import {
   BadRequestException,
@@ -7,17 +7,17 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { PurchaseRecord } from './purchase-record.schema'; // PurchaseRecord 스키마 import
+import { PackageRecord } from './package-record.schema'; // PackageRecord 스키마 import
 import { JwtService } from '@nestjs/jwt';
 import { Wallet } from 'src/module/wallets/wallets.schema';
 import { User } from 'src/module/users/users.schema';
 import { Package } from 'src/module/package/package.schema';
 
 @Injectable()
-export class PurchaseRecordService {
+export class PackageRecordService {
   constructor(
-    @InjectModel(PurchaseRecord.name)
-    private readonly purchaseRecordModel: Model<PurchaseRecord>, // 올바른 주입
+    @InjectModel(PackageRecord.name)
+    private readonly packageRecordModel: Model<PackageRecord>, // 올바른 주입
     @InjectModel(User.name)
     private readonly userModel: Model<User>, // 올바른 주입
     @InjectModel(Package.name)
@@ -28,13 +28,13 @@ export class PurchaseRecordService {
   ) {}
 
   // 구매 기록 생성
-  async createPurchaseRecord(createRecordDto: {
+  async createPackageRecord(createRecordDto: {
     userId: string;
     packageName: string;
     quantity: number;
     totalPrice: number;
-  }): Promise<PurchaseRecord> {
-    const newRecord = new this.purchaseRecordModel(createRecordDto);
+  }): Promise<PackageRecord> {
+    const newRecord = new this.packageRecordModel(createRecordDto);
     return newRecord.save();
   }
 
@@ -75,27 +75,47 @@ export class PurchaseRecordService {
     await userWallet.save();
 
     // 5. 구매 기록 생성 요청
-    await this.createPurchaseRecord({
+    await this.createPackageRecord({
       userId,
       packageName: selectedPackage.name,
       quantity,
       totalPrice,
     });
 
-    return `Purchase of ${quantity} ${selectedPackage.name}(s) approved.`;
+    return `Package of ${quantity} ${selectedPackage.name}(s) approved.`;
   }
 
   // 특정 사용자 구매 기록 조회
-  async getPurchaseRecordsByUser(
-    authHeader: string,
-  ): Promise<PurchaseRecord[]> {
-    const token = authHeader.split(' ')[1];
-    const decoded = this.jwtService.verify(token);
-    const userId = decoded.id;
+  async getPackageRecordsByUser(authHeader: string): Promise<PackageRecord[]> {
+    try {
+      // 헤더 확인
+      if (!authHeader) {
+        throw new UnauthorizedException('Authorization header is missing.');
+      }
+      const token = authHeader.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Bearer token is missing.');
+      }
 
-    return this.purchaseRecordModel
-      .find({ userId })
-      .sort({ createdAt: -1 })
-      .exec();
+      const decoded = this.jwtService.verify(token);
+      const userId = decoded.id;
+      // 유저 확인
+      if (!userId) {
+        throw new UnauthorizedException('User ID is missing in token.');
+      }
+
+      const packages = this.packageRecordModel
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .exec();
+
+      if (!packages) {
+        throw new BadRequestException('Packages not found.');
+      }
+
+      return packages;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
   }
 }

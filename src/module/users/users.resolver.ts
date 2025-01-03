@@ -11,20 +11,18 @@ export class UsersResolver {
 
   @Query(() => User)
   async getUserInfo(@Context() context: any): Promise<User> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user; // 인증된 사용자 정보
 
-    //console.log('UsersResolver - getUserInfo : ', authHeader);
-
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User is not authenticated');
     }
 
-    const user = await this.usersService.getUserInfo(authHeader);
-    if (!user) {
+    const userInfo = await this.usersService.getUserInfo(user); // 인증된 사용자 정보 전달
+    if (!userInfo) {
       throw new BadRequestException('User not found');
     }
 
-    return user;
+    return userInfo;
   }
 
   @Mutation(() => String)
@@ -51,12 +49,8 @@ export class UsersResolver {
     @Args('email') email: string,
     @Args('password') password: string,
   ): Promise<string> {
-    //console.log('UsersResolver - Context req.user:', context.req.user);
-    //console.log('UsersResolver - Login email:', email, 'password:', password);
-
     const token = await this.usersService.login(email, password);
     if (token) {
-      //console.log('UsersResolver - Generated Token:', token);
       return token;
     }
 

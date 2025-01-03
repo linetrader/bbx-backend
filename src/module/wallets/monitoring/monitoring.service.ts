@@ -18,15 +18,6 @@ export class MonitoringService {
     private readonly transactionService: TransactionService,
   ) {}
 
-  async testMonitoring() {
-    const testMsg = 'aaaaaaaaaa';
-    const amountDeposited = 0.01;
-    setInterval(async () => {
-      //for (const wallet of wallets) {}
-      this.walletsGateway.notifyDeposit(testMsg, amountDeposited);
-    }, 60000);
-  }
-
   async startMonitoringDeposits(): Promise<void> {
     setInterval(async () => {
       const wallets = await this.walletModel.find().exec();
@@ -80,7 +71,7 @@ export class MonitoringService {
           }
 
           // Notify user about the deposit
-          this.walletsGateway.notifyDeposit(wallet.address, amountDeposited);
+          //this.walletsGateway.notifyDeposit(wallet.address, amountDeposited);
 
           //console.log(
           //  `New deposit detected. Amount: ${amountDeposited}, Hash: ${transactionHash}`,

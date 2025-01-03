@@ -16,7 +16,7 @@ export async function seedInitialPackages(packageModel: Model<Package>) {
       name: 'DOGE',
       price: 1,
       miningInterval: 60,
-      miningProfit: 4.0,
+      miningProfit: 0.0024316,
       status: 'show',
     },
     {

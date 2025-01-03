@@ -3,12 +3,6 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response, NextFunction } from 'express';
 
-// interface ExtendedUser {
-//   id?: string;
-//   email?: string;
-//   mode?: string;
-// }
-
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly jwtService: JwtService) {}
@@ -44,7 +38,8 @@ export class AuthMiddleware implements NestMiddleware {
       //console.log('AuthMiddleware - Decoded JWT:', decoded);
     } catch (err) {
       //console.error('AuthMiddleware - JWT verification failed:', err);
-      req.user = undefined;
+      res.status(401).json({ message: 'Unauthorized' });
+      return next();
     }
     next();
   }

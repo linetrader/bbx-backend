@@ -1,4 +1,5 @@
 // google-otp.service.ts
+
 import {
   Injectable,
   UnauthorizedException,
@@ -20,41 +21,25 @@ export class GoogleOTPService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async getOtpInfo(authHeader: string): Promise<GoogleOTP | null> {
-    if (!authHeader) {
-      throw new UnauthorizedException('No Authorization header found.');
+  async getOtpInfo(user: { email: string }): Promise<GoogleOTP | null> {
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User email is missing.');
     }
 
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Bearer token is missing.');
+    let otpInfo = await this.googleOTPModel
+      .findOne({ email: user.email })
+      .exec();
+
+    // 데이터가 없을 경우 기본 데이터 생성
+    if (!otpInfo) {
+      otpInfo = new this.googleOTPModel({
+        email: user.email,
+        isOtpEnabled: false,
+      });
+      await otpInfo.save();
     }
 
-    try {
-      const decoded = this.jwtService.verify(token); // JWT 토큰 검증
-      const userEmail = decoded.email;
-      if (!userEmail) {
-        throw new UnauthorizedException('OTP Email is missing in token.');
-      }
-
-      let otpInfo = await this.googleOTPModel
-        .findOne({ email: userEmail })
-        .exec();
-
-      // 데이터가 없을 경우 기본 데이터 생성
-      if (!otpInfo) {
-        otpInfo = new this.googleOTPModel({
-          email: userEmail,
-          isOtpEnabled: false,
-        });
-        await otpInfo.save();
-      }
-
-      return otpInfo;
-    } catch (err) {
-      console.error('Error verifying token:', err);
-      throw new UnauthorizedException('Invalid or expired token.');
-    }
+    return otpInfo;
   }
 
   private getSecretKey(): Buffer {
@@ -106,45 +91,37 @@ export class GoogleOTPService {
       let decrypted = decipher.update(data, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
 
-      //console.log(`Decrypted data: ${decrypted}`);
       return decrypted;
     } catch {
       throw new UnauthorizedException('Failed to decrypt OTP secret.');
     }
   }
 
-  async generateOTP(
-    authHeader: string,
-  ): Promise<{ qrCode: string; manualKey: string }> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+  async generateOTP(user: {
+    email: string;
+  }): Promise<{ qrCode: string; manualKey: string }> {
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User email is missing.');
     }
 
-    const token = authHeader.split(' ')[1];
-    const { email } = this.jwtService.verify(token);
-
     const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(email, 'BitBoosterX', secret);
+    const otpauth = authenticator.keyuri(user.email, 'BitBoosterX', secret);
     const qrCode = await QRCode.toDataURL(otpauth);
 
     try {
-      // 기존 데이터 찾기
-      let otpRecord = await this.googleOTPModel.findOne({ email });
+      let otpRecord = await this.googleOTPModel.findOne({ email: user.email });
 
       if (!otpRecord) {
-        // 새 데이터 생성
         otpRecord = new this.googleOTPModel({
-          email,
+          email: user.email,
           otpSecret: this.encrypt(secret),
           isOtpEnabled: false,
         });
       } else {
-        // 기존 데이터 업데이트
         otpRecord.otpSecret = this.encrypt(secret);
         otpRecord.isOtpEnabled = false; // OTP 활성화는 verify 이후에 설정됨
       }
 
-      // 데이터 저장
       await otpRecord.save();
 
       return { qrCode, manualKey: secret };
@@ -155,18 +132,17 @@ export class GoogleOTPService {
   }
 
   async verifyAndSaveOTP(
-    authHeader: string,
+    user: { email: string },
     otpToken: string,
   ): Promise<boolean> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User email is missing.');
     }
 
-    const token = authHeader.split(' ')[1];
-    const { email } = this.jwtService.verify(token);
-
     try {
-      const otpRecord = await this.googleOTPModel.findOne({ email });
+      const otpRecord = await this.googleOTPModel.findOne({
+        email: user.email,
+      });
       if (!otpRecord) {
         throw new UnauthorizedException('OTP record not found for the email.');
       }
@@ -176,8 +152,6 @@ export class GoogleOTPService {
       }
 
       const decryptedSecret = this.decrypt(otpRecord.otpSecret);
-      //console.log('Decrypted Secret for Validation:', decryptedSecret);
-
       const isValid = authenticator.check(otpToken, decryptedSecret);
       if (!isValid) {
         throw new UnauthorizedException('Invalid OTP entered.');
@@ -194,31 +168,30 @@ export class GoogleOTPService {
     }
   }
 
-  async verifyOnly(authHeader: string, otpToken: string): Promise<boolean> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+  async verifyOnly(
+    user: { email: string },
+    otpToken: string,
+  ): Promise<boolean> {
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User email is missing.');
     }
 
-    const token = authHeader.split(' ')[1];
-    const { email } = this.jwtService.verify(token);
-
     try {
-      const otpRecord = await this.googleOTPModel.findOne({ email });
+      const otpRecord = await this.googleOTPModel.findOne({
+        email: user.email,
+      });
       if (!otpRecord) {
-        console.error(`No OTP record found for email: ${email}`);
+        console.error(`No OTP record found for email: ${user.email}`);
         throw new UnauthorizedException('OTP record not found for the email.');
       }
 
       if (!otpRecord.otpSecret) {
-        console.error(`No OTP secret found for email: ${email}`);
+        console.error(`No OTP secret found for email: ${user.email}`);
         throw new UnauthorizedException('No OTP secret found for this user.');
       }
 
       const decryptedSecret = this.decrypt(otpRecord.otpSecret);
-      //console.log(`Decrypted Secret for ${email}: ${decryptedSecret}`);
-
       const isValid = authenticator.check(otpToken, decryptedSecret);
-      //console.log(`OTP validation result for ${email}: ${isValid}`);
 
       if (!isValid) {
         throw new UnauthorizedException('Invalid OTP entered.');

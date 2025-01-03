@@ -13,8 +13,8 @@ export class PackageUsersResolver {
   async getUserMiningData(
     @Context() context: any,
   ): Promise<PackageUsers[] | null> {
-    const authHeader = context.req.headers.authorization;
-    return this.packageUsersService.getUserPackages(authHeader);
+    const user = context.req.user;
+    return this.packageUsersService.getUserPackages(user); // 인증된 사용자 정보를 사용
   }
 
   // 1. 패키지 구매
@@ -22,13 +22,19 @@ export class PackageUsersResolver {
   async purchasePackage(
     @Args('packageId', { type: () => String }) packageId: string,
     @Args('quantity', { type: () => Int }) quantity: number,
+    @Args('customerName', { type: () => String }) customerName: string,
+    @Args('customerPhone', { type: () => String }) customerPhone: string,
+    @Args('customerAddress', { type: () => String }) customerAddress: string,
     @Context() context: any,
   ): Promise<string> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user;
     return this.packageUsersService.purchasePackage(
-      authHeader,
+      user, // 인증된 사용자 정보를 전달
       packageId,
       quantity,
+      customerName,
+      customerPhone,
+      customerAddress,
     );
   }
 }

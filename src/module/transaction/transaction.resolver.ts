@@ -3,7 +3,6 @@
 import { Resolver, Query, Context } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './transaction.schema';
-import { UnauthorizedException } from '@nestjs/common';
 
 @Resolver()
 export class TransactionResolver {
@@ -14,14 +13,7 @@ export class TransactionResolver {
     description: 'Fetch all transactions for the user',
   })
   async getTransactionList(@Context() context: any): Promise<Transaction[]> {
-    const authHeader = context.req.headers.authorization;
-
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const transactions =
-      await this.transactionService.getTransactionsByUser(authHeader);
-    return transactions;
+    const user = context.req.user; // 인증된 사용자 정보
+    return await this.transactionService.getTransactionsByUser(user); // 인증된 사용자 정보 전달
   }
 }

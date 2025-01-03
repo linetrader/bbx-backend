@@ -9,10 +9,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Package } from './package.schema';
-import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/module/users/users.schema';
 import { UsersService } from 'src/module/users/users.service';
-
 import { seedInitialPackages } from './initial-packages.seed';
 
 @Injectable()
@@ -20,69 +18,45 @@ export class PackageService implements OnModuleInit {
   constructor(
     @InjectModel(Package.name) private readonly packageModel: Model<Package>,
     @InjectModel(User.name) private readonly userModel: Model<User>, // User 모델 추가
-    private readonly jwtService: JwtService,
     private readonly userService: UsersService, // 유저 서비스 주입
   ) {}
 
   // 모듈 초기화 시 호출
   async onModuleInit() {
-    //console.log('Seeding initial packages...');
     await seedInitialPackages(this.packageModel);
-    //console.log('Seeding completed.');
   }
 
-  async verifyAdmin(authHeader: string): Promise<boolean> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+  // admin 권한 확인 (이제 인증된 사용자 정보는 req.user에서 가져옴)
+  async verifyAdmin(user: { id: string }): Promise<boolean> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated.');
     }
 
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = this.jwtService.verify(token);
-      const user = await this.userModel.findById(decoded.id).exec();
-
-      if (!user) {
-        throw new UnauthorizedException('User not found.');
-      }
-
-      // 유저 레벨이 슈퍼 어드민(1) 또는 어드민(2)일 경우에만 true 반환
-      return user.userLevel === 1 || user.userLevel === 2;
-    } catch (error) {
-      console.error(`Token validation failed: ${(error as Error).message}`);
-      throw new UnauthorizedException('Invalid or expired token.');
+    const userRecord = await this.userModel.findById(user.id).exec();
+    if (!userRecord) {
+      throw new UnauthorizedException('User not found.');
     }
+
+    // 유저 레벨이 슈퍼 어드민(1) 또는 어드민(2)일 경우에만 true 반환
+    return userRecord.userLevel === 1 || userRecord.userLevel === 2;
   }
 
-  async getPackages(authHeader: string): Promise<Package[]> {
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
+  // 패키지 목록 가져오기
+  async getPackages(user: { id: string }): Promise<Package[]> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated.');
     }
 
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = this.jwtService.verify(token);
-      const user = await this.userService.findUserById(decoded.id);
-
-      //console.log(user);
-
-      if (!user) {
-        throw new UnauthorizedException('User not found.');
-      }
-
-      const packages = await this.packageModel.find({ status: 'show' }).exec();
-      //console.log(packages);
-
-      return packages;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(`Error verifying token: ${error.message}`);
-      } else {
-        console.error('An unknown error occurred during token verification.');
-      }
-      throw new UnauthorizedException('Invalid or expired token.');
+    const userRecord = await this.userService.findUserById(user.id);
+    if (!userRecord) {
+      throw new UnauthorizedException('User not found.');
     }
+
+    const packages = await this.packageModel.find({ status: 'show' }).exec();
+    return packages;
   }
 
+  // 패키지 추가
   async addPackage(createPackageDto: {
     name: string;
     price: number;
@@ -96,10 +70,11 @@ export class PackageService implements OnModuleInit {
     }
 
     const newPackage = new this.packageModel(createPackageDto);
-    newPackage.save();
+    await newPackage.save();
     return newPackage;
   }
 
+  // 패키지 수정
   async changePackage(
     name: string,
     price: number,

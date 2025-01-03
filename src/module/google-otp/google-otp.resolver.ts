@@ -1,4 +1,5 @@
 // google-otp.resolver.ts
+
 import { Query, Resolver, Mutation, Args, Context } from '@nestjs/graphql';
 import { GoogleOTPService } from './google-otp.service';
 import { GoogleOTP } from './google-otp.schema';
@@ -11,12 +12,15 @@ export class GoogleOTPResolver {
 
   @Query(() => GoogleOTP)
   async getOtpInfo(@Context() context: any): Promise<GoogleOTP> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user; // 인증된 사용자 정보
 
-    //console.log('UsersResolver - getUserInfo : ', authHeader);
-    const otpInfo = await this.googleOTPService.getOtpInfo(authHeader);
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const otpInfo = await this.googleOTPService.getOtpInfo(user);
     if (!otpInfo) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('OTP information not found');
     }
 
     return otpInfo;
@@ -24,10 +28,13 @@ export class GoogleOTPResolver {
 
   @Mutation(() => GenerateOtpOutput)
   async generateOTP(@Context() context: any): Promise<GenerateOtpOutput> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user; // 인증된 사용자 정보
 
-    const { qrCode, manualKey } =
-      await this.googleOTPService.generateOTP(authHeader);
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { qrCode, manualKey } = await this.googleOTPService.generateOTP(user);
     return { qrCode, manualKey };
   }
 
@@ -36,10 +43,14 @@ export class GoogleOTPResolver {
     @Context() context: any,
     @Args('otp') otpToken: string,
   ): Promise<boolean> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user; // 인증된 사용자 정보
+
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User not authenticated');
+    }
 
     const isVerified = await this.googleOTPService.verifyAndSaveOTP(
-      authHeader,
+      user,
       otpToken,
     );
     return isVerified;
@@ -50,8 +61,12 @@ export class GoogleOTPResolver {
     @Context() context: any,
     @Args('otp') otp: string,
   ): Promise<boolean> {
-    const authHeader = context.req.headers.authorization;
+    const user = context.req.user; // 인증된 사용자 정보
 
-    return await this.googleOTPService.verifyOnly(authHeader, otp);
+    if (!user || !user.email) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    return await this.googleOTPService.verifyOnly(user, otp);
   }
 }

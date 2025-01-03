@@ -9,12 +9,14 @@ import { UnauthorizedException } from '@nestjs/common';
 export class PackageResolver {
   constructor(private readonly packageService: PackageService) {}
 
+  // 패키지 목록 조회
   @Query(() => [Package])
   async getPackages(@Context() context: any): Promise<Package[]> {
-    const authHeader = context.req.headers.authorization;
-    return this.packageService.getPackages(authHeader);
+    const user = context.req.user; // 인증된 사용자 정보
+    return this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
   }
 
+  // 패키지 추가
   @Mutation(() => Package)
   async addPackage(
     @Args('name') name: string,
@@ -22,16 +24,18 @@ export class PackageResolver {
     @Args('status') status: string,
     @Context() context: any,
   ): Promise<Package> {
-    const authHeader = context.req.headers.authorization;
-    const isAdmin = await this.packageService.verifyAdmin(authHeader);
+    const user = context.req.user; // 인증된 사용자 정보
+
+    // 관리자인지 확인
+    const isAdmin = await this.packageService.verifyAdmin(user);
     if (!isAdmin) {
-      throw new UnauthorizedException(
-        'You are not authorized to add packages.',
-      );
+      throw new UnauthorizedException('You are not authorized to add packages');
     }
+
     return this.packageService.addPackage({ name, price, status });
   }
 
+  // 패키지 수정
   @Mutation(() => Package)
   async changePackage(
     @Args('name') name: string,
@@ -40,13 +44,16 @@ export class PackageResolver {
     @Args('status') status: string,
     @Context() context: any,
   ): Promise<Package> {
-    const authHeader = context.req.headers.authorization;
-    const isAdmin = await this.packageService.verifyAdmin(authHeader);
+    const user = context.req.user; // 인증된 사용자 정보
+
+    // 관리자인지 확인
+    const isAdmin = await this.packageService.verifyAdmin(user);
     if (!isAdmin) {
       throw new UnauthorizedException(
         'You are not authorized to change package prices.',
       );
     }
+
     return this.packageService.changePackage(
       name,
       price,

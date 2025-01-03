@@ -36,35 +36,17 @@ export class UsersService {
     return user;
   }
 
-  async getUserInfo(authHeader: string): Promise<User | null> {
-    if (!authHeader) {
-      throw new UnauthorizedException('No Authorization header found.');
+  async getUserInfo(user: { id: string }): Promise<User | null> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated.');
     }
 
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Bearer token is missing.');
+    const userInfo = await this.findUserById(user.id);
+    if (!userInfo) {
+      throw new BadRequestException('User not found.');
     }
 
-    try {
-      const decoded = this.jwtService.verify(token); // JWT 토큰 검증
-      //console.log('Decoded Token:', decoded);
-
-      const userId = decoded.id;
-      if (!userId) {
-        throw new UnauthorizedException('User ID is missing in token.');
-      }
-
-      const user = await this.findUserById(userId);
-      if (!user) {
-        throw new BadRequestException('User not found.');
-      }
-
-      return user;
-    } catch (err) {
-      console.error('Error verifying token:', err);
-      throw new UnauthorizedException('Invalid or expired token.');
-    }
+    return userInfo;
   }
 
   async register(userData: Partial<User>): Promise<string> {
@@ -99,23 +81,17 @@ export class UsersService {
   }
 
   async login(email: string, password: string): Promise<string> {
-    //console.log('UsersService - Received email:', email);
-
     const user = await this.userModel.findOne({ email });
     if (!user) {
-      console.warn('UsersService - Email not found');
       throw new BadRequestException('Email not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      console.warn('UsersService - Incorrect password for email:', email);
       throw new BadRequestException('Incorrect password');
     }
 
     const token = this.jwtService.sign({ id: user._id, email: user.email });
-    //console.log('UsersService - Generated JWT Token:', token);
-
     return token;
   }
 }

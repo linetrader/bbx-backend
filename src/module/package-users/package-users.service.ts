@@ -10,9 +10,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PackageUsers } from './package-users.schema';
 import { Package } from '../package/package.schema';
-import { PackageRecordService } from '../package-record/package-record.service';
 import { JwtService } from '@nestjs/jwt';
 import { Wallet } from '../wallets/wallets.schema';
+import { ContractsService } from '../contracts/contracts.service';
 
 @Injectable()
 export class PackageUsersService implements OnModuleInit {
@@ -23,7 +23,7 @@ export class PackageUsersService implements OnModuleInit {
     private readonly packageModel: Model<Package>,
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet>,
-    private readonly packageRecordService: PackageRecordService,
+    private readonly contractsService: ContractsService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -39,28 +39,19 @@ export class PackageUsersService implements OnModuleInit {
     miningProfit: number,
   ): Promise<void> {
     setInterval(async () => {
-      console.log(`Starting mining for package: ${name}`);
-
-      // 상품 유형이 `name`인 모든 PackageUsers 가져오기
       const packageUsers = await this.packageUsersModel
         .find({ packageType: name })
         .exec();
 
       for (const packageUser of packageUsers) {
         try {
-          // 상품 수량에 따른 수익 계산
           const totalProfit = miningProfit * packageUser.quantity;
 
-          // 수량 업데이트
           packageUser.miningBalance += totalProfit;
           await packageUser.save();
-
-          console.log(
-            `User ${packageUser.userId} mined ${totalProfit} (${miningProfit} x ${packageUser.quantity}) of ${name}. Total balance: ${packageUser.miningBalance}`,
-          );
         } catch (error) {
           console.error(
-            `Error during mining for user ${packageUser.userId}:`,
+            `Error during mining for user: ${packageUser.userId}:`,
             error,
           );
         }
@@ -70,12 +61,10 @@ export class PackageUsersService implements OnModuleInit {
 
   // 모든 패키지에 대해 마이닝 시작
   async startMiningForAllPackages(): Promise<void> {
-    // packageModel에서 모든 패키지 가져오기
     const allPackages = await this.packageModel.find({ status: 'show' }).exec();
 
     for (const pkg of allPackages) {
       if (pkg.miningInterval && pkg.miningProfit) {
-        // 각 패키지별로 마이닝 시작
         this.startMiningForPackage(
           pkg.name,
           pkg.miningInterval,
@@ -89,89 +78,140 @@ export class PackageUsersService implements OnModuleInit {
     }
   }
 
-  // 1. 패키지 구매 및 수량 업데이트
+  private async getWallet(userId: string): Promise<Wallet> {
+    const wallet = await this.walletModel.findOne({ userId }).exec();
+    if (!wallet) {
+      throw new BadRequestException('Wallet not found for the user.');
+    }
+    return wallet;
+  }
+
+  private async getPackage(packageId: string): Promise<Package> {
+    const selectedPackage = await this.packageModel.findById(packageId).exec();
+    if (!selectedPackage) {
+      throw new BadRequestException('Selected package not found.');
+    }
+    return selectedPackage;
+  }
+
+  private checkSufficientBalance(
+    balance: number,
+    price: number,
+    quantity: number,
+  ): void {
+    const totalPrice = price * quantity;
+    if (totalPrice > balance) {
+      throw new BadRequestException('Insufficient balance.');
+    }
+  }
+
+  private async updateUserPackage(
+    userId: string,
+    packageName: string,
+    walletId: string,
+    quantity: number,
+  ): Promise<void> {
+    const userPackage = await this.packageUsersModel.findOne({
+      userId,
+      packageType: packageName,
+    });
+
+    if (userPackage) {
+      userPackage.quantity += quantity;
+      await userPackage.save();
+    } else {
+      const newUserPackage = new this.packageUsersModel({
+        userId,
+        walletId,
+        packageType: packageName,
+        quantity,
+        miningBalance: 0.0,
+      });
+      await newUserPackage.save();
+    }
+  }
+
+  private async createContract(
+    customerName: string,
+    customerPhone: string,
+    customerAddress: string,
+    userId: string,
+    packageName: string,
+    quantity: number,
+    totalPrice: number,
+  ): Promise<boolean> {
+    return this.contractsService.createContract({
+      customerName,
+      customerPhone,
+      customerAddress,
+      userId,
+      packageName,
+      quantity,
+      totalPrice,
+    });
+  }
+
+  private async deductWalletBalance(
+    wallet: Wallet,
+    totalPrice: number,
+  ): Promise<void> {
+    wallet.usdtBalance -= totalPrice;
+    await wallet.save();
+  }
+
   async purchasePackage(
-    authHeader: string,
+    user: { id: string }, // 인증된 사용자 정보
     packageId: string,
     quantity: number,
+    customerName: string,
+    customerPhone: string,
+    customerAddress: string,
   ): Promise<string> {
     try {
-      if (!authHeader) {
-        throw new UnauthorizedException('Authorization header is missing.');
+      if (!user || !user.id) {
+        throw new UnauthorizedException('User is not authenticated');
       }
 
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Bearer token is missing.');
-      }
+      // 1. 사용자 지갑 가져오기
+      const myWallet = await this.getWallet(user.id);
 
-      // 1. userId 추출
-      const decoded = this.jwtService.verify(token); // JWT 토큰 검증
-      const userId = decoded.id;
-      if (!userId) {
-        throw new UnauthorizedException('User not found.');
-      }
+      // 2. 패키지 정보 가져오기
+      const selectedPackage = await this.getPackage(packageId);
 
-      //console.log(userId);
-
-      // 월렛 검색
-      const myWallet = await this.walletModel.findOne({ userId }).exec();
-      if (!myWallet) {
-        throw new BadRequestException('Wallet not found for the user.');
-      }
-
-      //console.log(myWallet);
-
-      // 2. 패키지 조회
-      const selectedPackage = await this.packageModel
-        .findById(packageId)
-        .exec();
-
-      if (!selectedPackage) {
-        throw new BadRequestException('Selected package not found.');
-      }
+      // 3. 잔액 확인
+      this.checkSufficientBalance(
+        myWallet.usdtBalance,
+        selectedPackage.price,
+        quantity,
+      );
 
       const totalPrice = selectedPackage.price * quantity;
 
-      console.log(
-        'totalPrice : ',
-        totalPrice,
-        'myWallet.usdtBalance : ',
-        myWallet.usdtBalance,
-      );
-
-      // 내 밸런스보다 큰지 체크한다.
-      if (totalPrice > myWallet.usdtBalance) {
-        throw new BadRequestException('Insufficient balance.');
-      }
-
-      // 3. PackageUsers 데이터 업데이트
-      const userPackage = await this.packageUsersModel.findOne({
-        userId,
-        packageType: selectedPackage.name,
-      });
-
-      if (userPackage) {
-        userPackage.quantity += quantity;
-        await userPackage.save();
-      } else {
-        const newUserPackage = new this.packageUsersModel({
-          userId,
-          walletId: myWallet.id,
-          packageType: selectedPackage.name,
-          quantity,
-          miningBalance: 0.0,
-        });
-        await newUserPackage.save();
-      }
-
-      // 4. 구매 기록 생성
-      await this.packageRecordService.createPackageRecord({
-        userId,
-        packageName: selectedPackage.name,
+      // 4. 계약서 생성
+      const contractCreated = await this.createContract(
+        customerName,
+        customerPhone,
+        customerAddress,
+        user.id,
+        selectedPackage.name,
         quantity,
         totalPrice,
-      });
+      );
+
+      if (!contractCreated) {
+        throw new BadRequestException('Failed to create contract.');
+      }
+
+      // 5. 사용자 패키지 업데이트
+      await this.updateUserPackage(
+        user.id,
+        selectedPackage.name,
+        myWallet.id,
+        quantity,
+      );
+
+      // 6. 지갑 잔액 차감
+      await this.deductWalletBalance(myWallet, totalPrice);
 
       return `Successfully purchased ${quantity} of ${selectedPackage.name}.`;
     } catch (error) {
@@ -182,23 +222,15 @@ export class PackageUsersService implements OnModuleInit {
   }
 
   // 3. 특정 유저의 패키지 마이닝 수량 조회
-  async getUserPackages(authHeader: string): Promise<PackageUsers[] | null> {
+  async getUserPackages(user: { id: string }): Promise<PackageUsers[] | null> {
     try {
-      if (!authHeader) {
-        throw new UnauthorizedException('Authorization header is missing.');
-      }
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Bearer token is missing.');
-      }
-      const decoded = this.jwtService.verify(token);
-      const userId = decoded.id;
-      // 유저 확인
-      if (!userId) {
-        throw new UnauthorizedException('User ID is missing in token.');
+      if (!user || !user.id) {
+        throw new UnauthorizedException('User is not authenticated');
       }
 
-      const packageUsers = this.packageUsersModel.find({ userId }).exec();
+      const packageUsers = await this.packageUsersModel
+        .find({ userId: user.id })
+        .exec();
       if (!packageUsers) {
         throw new UnauthorizedException('packageUsers not found.');
       }
@@ -241,13 +273,6 @@ export class PackageUsersService implements OnModuleInit {
     } else {
       return false;
     }
-
-    // console.log(
-    //   'adjustBalance - token, amount, wallet.usdtBalance : ',
-    //   token,
-    //   amount,
-    //   wallet.usdtBalance,
-    // );
 
     return true;
   }

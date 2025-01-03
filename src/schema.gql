@@ -74,27 +74,45 @@ type Package {
   status: String!
 }
 
-type PackageRecord {
+type Contract {
+  content: String!
+  date: String!
+  companyName: String!
+  companyAddress: String!
+  businessNumber: String!
+  representative: String!
+  customerName: String!
+  customerPhone: String!
+  customerAddress: String!
+  userId: String!
   packageName: String!
   quantity: Float!
   totalPrice: Float!
-  userId: String!
   createdAt: String!
+}
+
+type DefaultContractTemplate {
+  content: String!
+  date: String!
+  companyName: String!
+  companyAddress: String!
+  businessNumber: String!
+  representative: String!
 }
 
 type Query {
   getUserInfo: User!
   getWalletInfo: Wallet!
-  getWalletAddress: String
 
   """Fetch all transactions for the user"""
   getTransactionList: [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
   getUserMiningData: [PackageUsers!]!
+  getDefaultContract: DefaultContractTemplate!
 
-  """Fetch all transactions for the user"""
-  getPackageRecords: [PackageRecord!]!
+  """Fetch all contracts for the user"""
+  getPackageRecords: [Contract!]!
   getPendingWithdrawals: [WithdrawList!]!
 }
 
@@ -107,7 +125,7 @@ type Mutation {
   verifyOnlyOTP(otp: String!): Boolean!
   addPackage(name: String!, price: Float!, status: String!): Package!
   changePackage(name: String!, price: Float!, miningInterval: Float!, status: String!): Package!
-  purchasePackage(packageId: String!, quantity: Int!): String!
+  purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!
   rejectWithdrawal(withdrawalId: String!, remarks: String): Boolean!

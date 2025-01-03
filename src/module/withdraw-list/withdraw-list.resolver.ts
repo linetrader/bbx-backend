@@ -3,7 +3,6 @@
 import { Resolver, Mutation, Query, Args, Context } from '@nestjs/graphql';
 import { WithdrawListService } from './withdraw-list.service';
 import { WithdrawList } from './withdraw-list.schema';
-import { UnauthorizedException } from '@nestjs/common';
 
 @Resolver()
 export class WithdrawListResolver {
@@ -13,13 +12,9 @@ export class WithdrawListResolver {
   async getPendingWithdrawals(
     @Context() context: any,
   ): Promise<WithdrawList[]> {
-    const authHeader = context.req.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const token = authHeader.split(' ')[1];
-    return this.withdrawListService.getPendingWithdrawals(token);
+    // context.req.user에서 인증된 사용자 정보를 가져옵니다.
+    const { email } = context.req.user;
+    return this.withdrawListService.getPendingWithdrawals(email);
   }
 
   @Mutation(() => Boolean)
@@ -29,14 +24,9 @@ export class WithdrawListResolver {
     @Args('otp') otp: string,
     @Context() context: any,
   ): Promise<boolean> {
-    const authHeader = context.req.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const token = authHeader.split(' ')[1];
+    const { email } = context.req.user; // 인증된 사용자 정보에서 email을 가져옵니다.
     return this.withdrawListService.processWithdrawalRequest(
-      token,
+      email,
       currency,
       amount,
       otp,
@@ -48,13 +38,8 @@ export class WithdrawListResolver {
     @Args('withdrawalId') withdrawalId: string,
     @Context() context: any,
   ): Promise<boolean> {
-    const authHeader = context.req.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const token = authHeader.split(' ')[1];
-    return this.withdrawListService.approveWithdrawal(withdrawalId, token);
+    const { email } = context.req.user; // 인증된 사용자 정보에서 email을 가져옵니다.
+    return this.withdrawListService.approveWithdrawal(withdrawalId, email);
   }
 
   @Mutation(() => Boolean)
@@ -63,12 +48,7 @@ export class WithdrawListResolver {
     @Args('remarks', { nullable: true }) remarks: string,
     @Context() context: any,
   ): Promise<boolean> {
-    const authHeader = context.req.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing.');
-    }
-
-    const token = authHeader.split(' ')[1];
-    return this.withdrawListService.rejectWithdrawal(withdrawalId, token);
+    const { email } = context.req.user; // 인증된 사용자 정보에서 email을 가져옵니다.
+    return this.withdrawListService.rejectWithdrawal(withdrawalId, email);
   }
 }

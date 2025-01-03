@@ -15,10 +15,8 @@ import { WithdrawListModule } from './module/withdraw-list/withdraw-list.module'
 
 import { PackageModule } from './module/package/package.module';
 import { PackageUsersModule } from './module/package-users/package-users.module';
-import { PackageRecordModule } from './module/package-record/package-record.module';
 
-import { MiningModule } from './module/mining/mining.module';
-import { MiningRecordModule } from './module/mining-record/mining-record.module';
+import { ContractsModule } from './module/contracts/contracts.module';
 
 @Module({
   imports: [
@@ -50,7 +48,7 @@ import { MiningRecordModule } from './module/mining-record/mining-record.module'
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' },
+        signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
     }),
@@ -61,11 +59,9 @@ import { MiningRecordModule } from './module/mining-record/mining-record.module'
     TransactionModule,
     PackageModule,
     PackageUsersModule,
-    PackageRecordModule,
     GoogleOTPModule,
     WithdrawListModule,
-    MiningModule,
-    MiningRecordModule,
+    ContractsModule,
   ],
 })
 export class AppModule implements NestModule {

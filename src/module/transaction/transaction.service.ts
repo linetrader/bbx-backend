@@ -1,6 +1,6 @@
 // src/transaction/transaction.service.ts
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Transaction } from './transaction.schema';
@@ -11,26 +11,17 @@ export class TransactionService {
   constructor(
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<Transaction>,
-    private readonly jwtService: JwtService,
   ) {}
 
-  async getTransactionsByUser(authHeader: string): Promise<Transaction[]> {
-    const token = authHeader.split(' ')[1];
-    const decoded = this.jwtService.verify(token);
-    const userId = decoded.id;
+  async getTransactionsByUser(user: { id: string }): Promise<Transaction[]> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated');
+    }
 
-    // 사용자 ID로 트랜잭션 조회 및 반환
     const transactions = await this.transactionModel
-      .find({ userId: userId })
+      .find({ userId: user.id })
       .sort({ createdAt: -1 }) // 최신순 정렬
       .exec();
-
-    // createdAt 확인을 위해 출력
-    // transactions.forEach((transaction) => {
-    //   console.log(
-    //     `Transaction ID: ${transaction.id}, Created At: ${transaction.createdAt}`,
-    //   );
-    // });
 
     return transactions;
   }
@@ -47,7 +38,7 @@ export class TransactionService {
     await transaction.save();
   }
 
-  // 새로운 함수 추가: 특정 트랜잭션 해시 존재 여부 확인
+  // 특정 트랜잭션 해시 존재 여부 확인
   async checkTransactionHashExists(transactionHash: string): Promise<boolean> {
     const existingTransaction = await this.transactionModel
       .findOne({ transactionHash })

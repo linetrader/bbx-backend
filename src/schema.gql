@@ -75,7 +75,7 @@ type Package {
 }
 
 type Contract {
-  content: String!
+  content: [String!]!
   date: String!
   companyName: String!
   companyAddress: String!
@@ -92,7 +92,7 @@ type Contract {
 }
 
 type DefaultContractTemplate {
-  content: String!
+  content: [String!]!
   date: String!
   companyName: String!
   companyAddress: String!

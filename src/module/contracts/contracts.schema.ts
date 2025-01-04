@@ -7,56 +7,56 @@ import { Document } from 'mongoose';
 @Schema({ timestamps: true })
 @ObjectType()
 export class Contract extends Document {
-  @Prop({ required: true })
-  @Field()
-  content!: string;
+  @Prop({ type: [String], required: true })
+  @Field(() => [String])
+  content!: string[];
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   date!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   companyName!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   companyAddress!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   businessNumber!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   representative!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   customerName!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   customerPhone!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   customerAddress!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   userId!: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => String)
   packageName!: string;
 
   @Prop({ required: true, type: Number })
-  @Field()
+  @Field(() => Number)
   quantity!: number;
 
   @Prop({ required: true, type: Number })
-  @Field()
+  @Field(() => Number)
   totalPrice!: number;
 
   @Field(() => String)
@@ -67,40 +67,40 @@ export const ContractSchema = SchemaFactory.createForClass(Contract);
 
 @ObjectType()
 export class DefaultContractTemplate {
-  @Field()
-  content!: string;
+  @Field(() => [String])
+  content!: string[];
 
-  @Field()
+  @Field(() => String)
   date!: string;
 
-  @Field()
+  @Field(() => String)
   companyName!: string;
 
-  @Field()
+  @Field(() => String)
   companyAddress!: string;
 
-  @Field()
+  @Field(() => String)
   businessNumber!: string;
 
-  @Field()
+  @Field(() => String)
   representative!: string;
 }
 
 @InputType()
 export class CreateContractInput {
-  @Field()
+  @Field(() => String)
   customerName!: string;
 
-  @Field()
+  @Field(() => String)
   customerPhone!: string;
 
-  @Field()
+  @Field(() => String)
   customerAddress!: string;
 
-  @Field()
+  @Field(() => String)
   userId!: string;
 
-  @Field()
+  @Field(() => String)
   packageName!: string;
 
   @Field(() => Number)

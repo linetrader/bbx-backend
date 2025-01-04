@@ -86,7 +86,7 @@ export class WalletsService {
     const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
 
     if (!wallet) {
-      //console.log(`Wallet not found for user ${user.id}`);
+      console.log(`Wallet not found for user ${user.id}`);
       throw new BadRequestException('Wallet not found');
     }
 

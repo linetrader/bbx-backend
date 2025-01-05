@@ -24,9 +24,10 @@ export class WithdrawListResolver {
     @Args('otp') otp: string,
     @Context() context: any,
   ): Promise<boolean> {
-    const { email } = context.req.user; // 인증된 사용자 정보에서 email을 가져옵니다.
+    const decoded = context.req.user; // 인증된 사용자 정보에서 email을 가져옵니다.
     return this.withdrawListService.processWithdrawalRequest(
-      email,
+      decoded.id,
+      decoded.email,
       currency,
       amount,
       otp,

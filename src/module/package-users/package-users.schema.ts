@@ -17,7 +17,7 @@ export class PackageUsers extends Document {
 
   @Prop({ required: true })
   @Field()
-  packageType!: string; // btc, doge
+  packageType!: string; // BTC, DOGE
 
   @Prop({ required: true, type: Number })
   @Field()

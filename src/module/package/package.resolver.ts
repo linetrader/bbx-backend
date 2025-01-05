@@ -57,7 +57,7 @@ export class PackageResolver {
     return this.packageService.changePackage(
       name,
       price,
-      miningInterval,
+      //miningInterval,
       status,
     );
   }

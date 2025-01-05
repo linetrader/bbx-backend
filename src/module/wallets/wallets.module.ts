@@ -9,8 +9,8 @@ import { WalletsGateway } from './wallets.gateway';
 import { TransactionModule } from 'src/module/transaction/transaction.module';
 import { GoogleOTPModule } from 'src/module/google-otp/google-otp.module';
 import { User, UserSchema } from '../users/users.schema';
-import { MonitoringService } from './monitoring/monitoring.service';
-import { BscScanModule } from './bscscan/bscscan.module';
+//import { MonitoringService } from './monitoring/monitoring.service';
+//import { BscScanModule } from './bscscan/bscscan.module';
 
 @Module({
   imports: [
@@ -20,13 +20,13 @@ import { BscScanModule } from './bscscan/bscscan.module';
     ]),
     TransactionModule,
     GoogleOTPModule,
-    BscScanModule, // BscScanModule 추가
+    //BscScanModule, // BscScanModule 추가
   ],
   providers: [
     WalletsService,
     WalletsResolver,
     WalletsGateway,
-    MonitoringService,
+    //MonitoringService,
   ],
   exports: [MongooseModule, WalletsService], // WalletModel 내보내기
 })

@@ -4,6 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -16,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PackageUsersService } from '../package-users/package-users.service';
 
 @Injectable()
-export class WithdrawListService {
+export class WithdrawListService implements OnModuleInit {
   constructor(
     @InjectModel(WithdrawList.name)
     private readonly withdrawListModel: Model<WithdrawList>,
@@ -28,9 +29,16 @@ export class WithdrawListService {
     private readonly walletService: WalletsService,
     private readonly packageUsersService: PackageUsersService,
   ) {}
+  /**
+   * 모듈 초기화 시 호출
+   */
+  async onModuleInit() {
+    console.log('WithdrawListService - onModuleInit');
+  }
 
   // email을 파라미터로 받아서 Pending Withdrawals 처리
   async getPendingWithdrawals(email: string): Promise<WithdrawList[]> {
+    console.log('getPendingWithdrawals - emil', email);
     if (!email) {
       throw new UnauthorizedException('Email not found in user context.');
     }
@@ -48,24 +56,30 @@ export class WithdrawListService {
 
   // email을 파라미터로 받아서 출금 요청 처리
   async processWithdrawalRequest(
+    userId: string,
     email: string,
     currency: string,
     amount: number,
     otp: string,
   ): Promise<boolean> {
     if (!email) {
+      console.log('Email not found in user context.');
       throw new UnauthorizedException('Email not found in user context.');
     }
 
     // OTP 검증
     const isValidOtp = await this.googleOtpService.verifyOnly({ email }, otp);
+    //console.log('isValidOtp', isValidOtp);
     if (!isValidOtp) {
+      console.log('Invalid OTP.');
       throw new UnauthorizedException('Invalid OTP.');
     }
 
+    console.log('otp', otp);
+
     // 지갑 자산 차감
     const walletUpdateResult = await this.deductFromWallet(
-      email,
+      userId,
       currency,
       amount,
     );
@@ -139,13 +153,13 @@ export class WithdrawListService {
 
   // 지갑에서 금액 차감
   private async deductFromWallet(
-    email: string,
+    userId: string,
     currency: string,
     amount: number,
   ): Promise<boolean> {
     try {
       const walletUpdateResult = await this.packageUsersService.adjustBalance(
-        email,
+        userId,
         currency,
         amount,
       );
@@ -157,7 +171,7 @@ export class WithdrawListService {
       }
 
       return true;
-    } catch (error) {
+    } catch {
       throw new BadRequestException(`Insufficient balance.`);
     }
   }

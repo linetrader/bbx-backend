@@ -84,7 +84,7 @@ export class ContractsService implements OnModuleInit {
       //console.log('getPackageRecordsByUser - packages : ', packages);
 
       return packages;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token.');
     }
   }

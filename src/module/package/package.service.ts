@@ -78,7 +78,7 @@ export class PackageService implements OnModuleInit {
   async changePackage(
     name: string,
     price: number,
-    miningInterval: number,
+    //miningInterval: number,
     status: string,
   ): Promise<Package> {
     const findPackage = await this.packageModel.findOne({ name }).exec();
@@ -86,7 +86,7 @@ export class PackageService implements OnModuleInit {
       throw new BadRequestException('Package not found.');
     }
     findPackage.price = price;
-    findPackage.miningInterval = miningInterval;
+    //findPackage.miningInterval = miningInterval;
     findPackage.status = status;
     return findPackage.save();
   }

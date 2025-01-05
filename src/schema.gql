@@ -20,7 +20,7 @@ type User {
 type Wallet {
   id: ID!
   address: String!
-  whitdrawAddress: String!
+  whithdrawAddress: String!
   userId: String!
   usdtBalance: Float!
 }
@@ -69,7 +69,6 @@ type Package {
   id: ID!
   name: String!
   price: Float!
-  miningInterval: Float!
   miningProfit: Float!
   status: String!
 }
@@ -120,6 +119,7 @@ type Mutation {
   register(email: String!, username: String!, firstname: String!, lastname: String!, password: String!, referrer: String): String!
   login(email: String!, password: String!): String!
   createWallet: Wallet!
+  saveWithdrawAddress(newAddress: String!, otp: String!): Boolean!
   generateOTP: GenerateOtpOutput!
   verifyAndSaveOTP(otp: String!): Boolean!
   verifyOnlyOTP(otp: String!): Boolean!

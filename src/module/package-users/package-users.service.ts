@@ -14,8 +14,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Wallet } from '../wallets/wallets.schema';
 import { ContractsService } from '../contracts/contracts.service';
 
+//interface minitData
+
 @Injectable()
 export class PackageUsersService implements OnModuleInit {
+  private packageData: Record<string, { name: string; miningProfit: number }> =
+    {}; // 패키지 데이터를 저장하는 전역 변수
+
   constructor(
     @InjectModel(PackageUsers.name)
     private readonly packageUsersModel: Model<PackageUsers>,
@@ -29,16 +34,37 @@ export class PackageUsersService implements OnModuleInit {
 
   async onModuleInit() {
     console.log('Starting mining process for active packages...');
-    this.startMiningForAllPackages();
+    await this.initialMiningForAllPackages();
+    //this.startMiningForPackage();
   }
 
-  // 특정 상품에 대한 마이닝 실행
-  async startMiningForPackage(
-    name: string,
-    miningInterval: number,
-    miningProfit: number,
-  ): Promise<void> {
-    setInterval(async () => {
+  /**
+   * 모든 패키지 데이터를 전역 변수에 저장
+   */
+  async initialMiningForAllPackages(): Promise<void> {
+    const allPackages = await this.packageModel.find({ status: 'show' }).exec();
+
+    for (const pkg of allPackages) {
+      if (pkg.miningProfit) {
+        this.packageData[pkg.name] = {
+          name: pkg.name,
+          miningProfit: pkg.miningProfit,
+        };
+      } else {
+        console.warn(`Package ${pkg.name} does not have valid miningProfit.`);
+      }
+    }
+
+    console.log('Package data initialized:', this.packageData);
+  }
+
+  /**
+   * 저장된 패키지 데이터를 기반으로 마이닝 실행
+   */
+  async startMiningForPackage(): Promise<void> {
+    for (const packageName in this.packageData) {
+      const { name, miningProfit } = this.packageData[packageName];
+
       const packageUsers = await this.packageUsersModel
         .find({ packageType: name })
         .exec();
@@ -49,31 +75,16 @@ export class PackageUsersService implements OnModuleInit {
 
           packageUser.miningBalance += totalProfit;
           await packageUser.save();
+
+          console.log(
+            `User ${packageUser.userId} mined ${totalProfit} for package ${name}`,
+          );
         } catch (error) {
           console.error(
-            `Error during mining for user: ${packageUser.userId}:`,
+            `Error during mining for user: ${packageUser.userId} and package ${name}:`,
             error,
           );
         }
-      }
-    }, miningInterval * 1000); // miningInterval 단위를 초로 변환
-  }
-
-  // 모든 패키지에 대해 마이닝 시작
-  async startMiningForAllPackages(): Promise<void> {
-    const allPackages = await this.packageModel.find({ status: 'show' }).exec();
-
-    for (const pkg of allPackages) {
-      if (pkg.miningInterval && pkg.miningProfit) {
-        this.startMiningForPackage(
-          pkg.name,
-          pkg.miningInterval,
-          pkg.miningProfit,
-        );
-      } else {
-        console.warn(
-          `Package ${pkg.name} does not have valid miningInterval or miningProfit.`,
-        );
       }
     }
   }
@@ -236,7 +247,7 @@ export class PackageUsersService implements OnModuleInit {
       }
 
       return packageUsers;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException(`{error.message}`);
     }
   }
@@ -257,23 +268,30 @@ export class PackageUsersService implements OnModuleInit {
       if (wallet.usdtBalance > amount) {
         wallet.usdtBalance = wallet.usdtBalance - amount;
         await wallet.save();
+        return true;
       }
     } else if (currency === 'BTC' || currency === 'DOGE') {
-      const myPackage = await this.packageUsersModel.findOne({
-        userId,
-        currency,
-      });
+      const myPackage = await this.packageUsersModel
+        .findOne({
+          userId: userId,
+          packageType: currency,
+        })
+        .exec();
+
+      //console.log('adjustBalance - myPackage : ', myPackage);
+
       if (!myPackage) {
         return false;
       }
       if (myPackage.miningBalance > amount) {
         myPackage.miningBalance = myPackage.miningBalance - amount;
         await myPackage.save();
+        return true;
       }
     } else {
       return false;
     }
 
-    return true;
+    return false;
   }
 }

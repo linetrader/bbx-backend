@@ -15,9 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { WalletsGateway } from './wallets.gateway';
 import { TransactionService } from 'src/module/transaction/transaction.service';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
-import { MonitoringService } from './monitoring/monitoring.service';
-
-// src/wallets/wallets.service.ts
+//import { MonitoringService } from './monitoring/monitoring.service';
 
 @Injectable()
 export class WalletsService {
@@ -28,9 +26,9 @@ export class WalletsService {
     private readonly jwtService: JwtService,
     private readonly walletsGateway: WalletsGateway,
     private readonly googleOtpService: GoogleOTPService,
-    private readonly monitoringService: MonitoringService,
+    //private readonly monitoringService: MonitoringService,
   ) {
-    this.monitoringService.startMonitoringDeposits();
+    //this.monitoringService.startMonitoringDeposits();
   }
 
   private savePrivateKeyToFile(walletId: string, privateKey: string): void {
@@ -59,23 +57,49 @@ export class WalletsService {
     newAddress: string,
     otp: string,
   ): Promise<boolean> {
-    const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
-    if (!wallet) {
-      console.log(`No wallet found for user ${user.id}`);
-      throw new BadRequestException(
-        'Wallet not found. Please create a wallet.',
+    //console.log('[DEBUG] saveWithdrawAddress called');
+    //console.log('[DEBUG] Input user:', user);
+    //console.log('[DEBUG] Input newAddress:', newAddress);
+    //console.log('[DEBUG] Input otp:', otp);
+
+    if (!user || !user.id || !user.email) {
+      console.error('[ERROR] User not found or invalid user object');
+      throw new BadRequestException('User not found.');
+    }
+
+    try {
+      const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
+      //console.log('[DEBUG] Retrieved wallet:', wallet);
+
+      if (!wallet) {
+        console.warn(`[WARNING] No wallet found for user ${user.id}`);
+        throw new BadRequestException(
+          'Wallet not found. Please create a wallet.',
+        );
+      }
+
+      const isValidOtp = await this.googleOtpService.verifyOnly(
+        { email: user.email },
+        otp,
       );
+      //console.log('[DEBUG] OTP validation result:', isValidOtp);
+
+      if (!isValidOtp) {
+        console.error('[ERROR] Invalid OTP provided');
+        throw new UnauthorizedException('Invalid OTP.');
+      }
+
+      wallet.whithdrawAddress = newAddress;
+      //console.log('[DEBUG] Updated wallet withdrawAddress:',wallet.whithdrawAddress,);
+
+      await wallet.save();
+      //console.log('[DEBUG] Wallet saved successfully');
+
+      return true;
+    } catch (error) {
+      console.error('[ERROR] saveWithdrawAddress failed:', error);
+      throw error; // Re-throw the error to ensure it propagates correctly
     }
-
-    const isValidOtp = await this.googleOtpService.verifyOnly(user, otp);
-    if (!isValidOtp) {
-      throw new UnauthorizedException('Invalid OTP.');
-    }
-
-    wallet.whitdrawAddress = newAddress;
-    await wallet.save();
-
-    return true;
   }
 
   async getWalletInfo(user: { id: string }): Promise<Wallet> {

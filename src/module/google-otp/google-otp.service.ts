@@ -191,11 +191,11 @@ export class GoogleOTPService {
       }
 
       const decryptedSecret = this.decrypt(otpRecord.otpSecret);
-      const isValid = authenticator.check(otpToken, decryptedSecret);
-
-      if (!isValid) {
-        throw new UnauthorizedException('Invalid OTP entered.');
+      if (!decryptedSecret) {
+        throw new UnauthorizedException('Invalid OTP Secret.');
       }
+
+      const isValid = authenticator.check(otpToken, decryptedSecret);
 
       return isValid;
     } catch {

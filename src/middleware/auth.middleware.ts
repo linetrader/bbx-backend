@@ -21,10 +21,10 @@ export class AuthMiddleware implements NestMiddleware {
       return next();
     }
 
+    //console.log('AuthMiddleware - Incoming Authorization Header');
+
     if (authHeader === 'login') {
-      //console.log('AuthMiddleware - Login mode detected');
       req.user = { mode: 'login' };
-      //console.log('AuthMiddleware - Updated req.user:', req.user);
       return next();
     }
 
@@ -35,12 +35,11 @@ export class AuthMiddleware implements NestMiddleware {
         email: string;
       };
       req.user = decoded;
-      //console.log('AuthMiddleware - Decoded JWT:', decoded);
-    } catch (err) {
-      //console.error('AuthMiddleware - JWT verification failed:', err);
-      res.status(401).json({ message: 'Unauthorized' });
       return next();
+    } catch (err) {
+      //console.error('AuthMiddleware - JWT verification failed:', err.message);
+      // JWT 검증 실패 시 응답을 종료
+      return res.status(401).json({ message: 'Unauthorized' });
     }
-    next();
   }
 }

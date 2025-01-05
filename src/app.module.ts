@@ -17,6 +17,7 @@ import { PackageModule } from './module/package/package.module';
 import { PackageUsersModule } from './module/package-users/package-users.module';
 
 import { ContractsModule } from './module/contracts/contracts.module';
+import { MonitoringModule } from './module/monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -40,6 +41,8 @@ import { ContractsModule } from './module/contracts/contracts.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'), // 스키마 파일 자동 생성
       context: ({ req }: { req: Request }) => ({ req }), // req 타입 지정
+      playground: process.env.NODE_ENV !== 'production', // 프로덕션 환경 제외 활성화
+      introspection: true, // introspection 활성화
     }),
 
     // JWT 설정
@@ -62,6 +65,7 @@ import { ContractsModule } from './module/contracts/contracts.module';
     GoogleOTPModule,
     WithdrawListModule,
     ContractsModule,
+    MonitoringModule,
   ],
 })
 export class AppModule implements NestModule {

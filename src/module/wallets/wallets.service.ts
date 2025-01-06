@@ -118,7 +118,10 @@ export class WalletsService {
   }
 
   async createWallet(user: { id: string }): Promise<Wallet> {
+    console.log('[DEBUG] createWallet called with user:', user);
+
     if (!user || !user.id) {
+      console.error('[ERROR] User is not authenticated');
       throw new UnauthorizedException('User is not authenticated');
     }
 
@@ -126,22 +129,24 @@ export class WalletsService {
       .findOne({ userId: user.id })
       .exec();
     if (existingWallet) {
-      console.log(`Wallet already exists for user ${user.id}`);
+      console.log(`[DEBUG] Wallet already exists for user ${user.id}`);
       return existingWallet;
     }
+
+    console.log('[DEBUG] Creating new wallet');
 
     const wallet = ethers.Wallet.createRandom();
     const newWallet = await this.walletModel.create({
       address: wallet.address,
-      whitdrawAddress: '0x', // Placeholder address
+      whithdrawAddress: '0x', // 명시적으로 기본값 제공
       userId: user.id,
       usdtBalance: 0,
-      dogeBalance: 0,
-      btcBalance: 0,
     });
 
+    console.log('[DEBUG] Saving private key');
     this.savePrivateKeyToFile(String(newWallet._id), wallet.privateKey);
 
+    console.log('[DEBUG] Wallet created successfully:', newWallet);
     return newWallet;
   }
 }

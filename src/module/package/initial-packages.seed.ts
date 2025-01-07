@@ -8,21 +8,18 @@ export async function seedInitialPackages(packageModel: Model<Package>) {
     {
       name: 'BTC',
       price: 1,
-      miningInterval: 60,
       miningProfit: 0.000013,
-      status: 'show',
+      status: 'hide',
     },
     {
       name: 'DOGE',
       price: 1,
-      miningInterval: 60,
       miningProfit: 0.0024316,
       status: 'show',
     },
     {
       name: 'BBX',
       price: 1,
-      miningInterval: 60, // 추가
       miningProfit: 0.00001, // 추가
       status: 'hide', // 필요 시 추가
     },

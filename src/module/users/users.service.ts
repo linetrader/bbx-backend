@@ -96,8 +96,32 @@ export class UsersService {
   }
 
   // 페이징 처리된 사용자 목록 가져오기
-  async getUsers(limit: number, offset: number, user?: any): Promise<User[]> {
-    console.log('Authenticated User:', user);
+  async getUsers(
+    limit: number,
+    offset: number,
+    user: { id: string },
+  ): Promise<User[]> {
+    if (!user || !user.id) {
+      throw new Error('Unauthorized: User information is missing.');
+    }
+
+    // 요청한 사용자의 정보를 데이터베이스에서 가져오기
+    const userId = user.id;
+    //console.log('userId - ', userId);
+    const requestingUser = await this.userModel.findById(userId).exec();
+
+    //console.log('requestingUser - ', requestingUser);
+    if (!requestingUser) {
+      throw new BadRequestException('Unauthorized: User not found.');
+    }
+    //console.log('requestingUser - ', requestingUser.userLevel);
+
+    // 어드민 레벨 확인 (3, 2, 1)
+    if (requestingUser.userLevel > 3) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
 
     return this.userModel
       .find()

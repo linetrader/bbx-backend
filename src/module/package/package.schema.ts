@@ -4,7 +4,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Document } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 @ObjectType()
 export class Package extends Document {
   @Field(() => ID)
@@ -21,6 +21,10 @@ export class Package extends Document {
   @Prop({ required: true })
   @Field()
   miningProfit!: number; // 상품 1개당 나오는 코인 수량
+
+  @Prop({ required: true, type: Number, default: 3600000 }) // 기본값 1시간 (밀리초 단위)
+  @Field()
+  miningInterval!: number; // 마이닝 간격 (밀리초 단위)
 
   @Prop({ required: true, default: 'hide' })
   @Field()

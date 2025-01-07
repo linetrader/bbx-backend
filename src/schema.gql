@@ -87,6 +87,7 @@ type Package {
   name: String!
   price: Float!
   miningProfit: Float!
+  miningInterval: Float!
   status: String!
   createdAt: String!
   updatedAt: String!

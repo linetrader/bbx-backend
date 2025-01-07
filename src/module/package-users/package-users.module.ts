@@ -9,6 +9,7 @@ import { PackageModule } from '../package/package.module';
 //import { PackageRecordModule } from '../package-record/package-record.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import { ContractsModule } from '../contracts/contracts.module';
+import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import MiningLogsModule
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ContractsModule } from '../contracts/contracts.module';
     WalletsModule,
     PackageModule,
     ContractsModule,
+    MiningLogsModule,
     //PackageRecordModule,
   ],
   providers: [PackageUsersResolver, PackageUsersService],

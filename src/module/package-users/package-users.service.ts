@@ -13,13 +13,16 @@ import { Package } from '../package/package.schema';
 import { JwtService } from '@nestjs/jwt';
 import { Wallet } from '../wallets/wallets.schema';
 import { ContractsService } from '../contracts/contracts.service';
+import { MiningLogsService } from '../mining-logs/mining-logs.service'; // Import MiningLogsService
 
 //interface minitData
 
 @Injectable()
 export class PackageUsersService implements OnModuleInit {
-  private packageData: Record<string, { name: string; miningProfit: number }> =
-    {}; // 패키지 데이터를 저장하는 전역 변수
+  private packageData: Record<
+    string,
+    { name: string; miningProfit: number; miningInterval: number }
+  > = {}; // 패키지 데이터를 저장하는 전역 변수
 
   constructor(
     @InjectModel(PackageUsers.name)
@@ -30,6 +33,7 @@ export class PackageUsersService implements OnModuleInit {
     private readonly walletModel: Model<Wallet>,
     private readonly contractsService: ContractsService,
     private readonly jwtService: JwtService,
+    private readonly miningLogsService: MiningLogsService, // Add MiningLogsService as a dependency
   ) {}
 
   async onModuleInit() {
@@ -49,6 +53,7 @@ export class PackageUsersService implements OnModuleInit {
         this.packageData[pkg.name] = {
           name: pkg.name,
           miningProfit: pkg.miningProfit,
+          miningInterval: pkg.miningInterval,
         };
       } else {
         console.warn(`Package ${pkg.name} does not have valid miningProfit.`);
@@ -63,7 +68,8 @@ export class PackageUsersService implements OnModuleInit {
    */
   async startMiningForPackage(): Promise<void> {
     for (const packageName in this.packageData) {
-      const { name, miningProfit } = this.packageData[packageName];
+      const { name, miningProfit, miningInterval } =
+        this.packageData[packageName];
 
       const packageUsers = await this.packageUsersModel
         .find({ packageType: name })
@@ -76,9 +82,16 @@ export class PackageUsersService implements OnModuleInit {
           packageUser.miningBalance += totalProfit;
           await packageUser.save();
 
-          console.log(
-            `User ${packageUser.userId} mined ${totalProfit} for package ${name}`,
+          // 마이닝 기록
+          //console.log('마이닝 기록...');
+          await this.miningLogsService.recordMiningLog(
+            packageUser.userId,
+            packageUser.packageType,
+            totalProfit,
+            miningInterval,
           );
+
+          //console.log(`User ${packageUser.userId} mined ${totalProfit} for package ${name}`,);
         } catch (error) {
           console.error(
             `Error during mining for user: ${packageUser.userId} and package ${name}:`,

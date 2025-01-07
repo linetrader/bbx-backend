@@ -1,12 +1,15 @@
 // src/users/users.schema.ts
 
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType, ID, Int } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 @Schema({ timestamps: true }) // timestamps 옵션 활성화
 @ObjectType()
 export class User extends Document {
+  @Field(() => ID)
+  id!: string;
+
   @Prop({ required: true })
   @Field()
   username!: string;
@@ -46,6 +49,26 @@ export class User extends Document {
   @Prop({ type: Number, default: 7 }) // 기본값: 일반회원
   @Field({ description: 'User Level', defaultValue: 7 })
   userLevel!: number; // 슈퍼 어드민(1) ~ 일반회원(7)
+
+  @Field(() => String)
+  createdAt!: Date;
+
+  @Field(() => String)
+  updatedAt!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+@ObjectType()
+export class GetUsersResponse {
+  @Field(() => [User]) // 사용자 배열
+  data: User[];
+
+  @Field(() => Int) // 총 사용자 수
+  totalUsers: number;
+
+  constructor(data: User[], totalUsers: number) {
+    this.data = data;
+    this.totalUsers = totalUsers;
+  }
+}

@@ -1,12 +1,15 @@
 // contracts.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Field, ObjectType, InputType } from '@nestjs/graphql';
+import { Field, ObjectType, InputType, ID } from '@nestjs/graphql';
 import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 @ObjectType()
 export class Contract extends Document {
+  @Field(() => ID)
+  id!: string;
+
   @Prop({ type: [String], required: true })
   @Field(() => [String])
   content!: string[];
@@ -61,6 +64,9 @@ export class Contract extends Document {
 
   @Field(() => String)
   createdAt!: Date;
+
+  @Field(() => String)
+  updatedAt!: Date;
 }
 
 export const ContractSchema = SchemaFactory.createForClass(Contract);

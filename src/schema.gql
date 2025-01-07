@@ -3,6 +3,7 @@
 # ------------------------------------------------------
 
 type User {
+  id: ID!
   username: String!
   firstname: String!
   lastname: String!
@@ -15,6 +16,13 @@ type User {
 
   """User Level"""
   userLevel: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GetUsersResponse {
+  data: [User!]!
+  totalUsers: Int!
 }
 
 type Wallet {
@@ -23,9 +31,12 @@ type Wallet {
   whithdrawAddress: String!
   userId: String!
   usdtBalance: Float!
+  createdAt: String!
+  updatedAt: String!
 }
 
 type Transaction {
+  id: ID!
   type: String!
   amount: String!
   token: String!
@@ -33,13 +44,16 @@ type Transaction {
   userId: String!
   walletId: String!
   createdAt: String!
+  updatedAt: String!
 }
 
 type GoogleOTP {
+  id: ID!
   email: String!
   otpSecret: String!
   isOtpEnabled: Boolean!
   createdAt: String!
+  updatedAt: String!
 }
 
 type GenerateOtpOutput {
@@ -48,6 +62,7 @@ type GenerateOtpOutput {
 }
 
 type WithdrawList {
+  id: ID!
   email: String!
   currency: String!
   amount: Float!
@@ -57,12 +72,14 @@ type WithdrawList {
 }
 
 type PackageUsers {
+  id: ID!
   userId: String!
   walletId: String
   packageType: String!
   quantity: Float!
   miningBalance: Float!
   createdAt: String!
+  updatedAt: String!
 }
 
 type Package {
@@ -71,9 +88,12 @@ type Package {
   price: Float!
   miningProfit: Float!
   status: String!
+  createdAt: String!
+  updatedAt: String!
 }
 
 type Contract {
+  id: ID!
   content: [String!]!
   date: String!
   companyName: String!
@@ -88,6 +108,7 @@ type Contract {
   quantity: Float!
   totalPrice: Float!
   createdAt: String!
+  updatedAt: String!
 }
 
 type DefaultContractTemplate {
@@ -101,6 +122,7 @@ type DefaultContractTemplate {
 
 type Query {
   getUserInfo: User!
+  getUsers(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
   getWalletInfo: Wallet!
 
   """Fetch all transactions for the user"""

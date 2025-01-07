@@ -94,4 +94,21 @@ export class UsersService {
     const token = this.jwtService.sign({ id: user._id, email: user.email });
     return token;
   }
+
+  // 페이징 처리된 사용자 목록 가져오기
+  async getUsers(limit: number, offset: number, user?: any): Promise<User[]> {
+    console.log('Authenticated User:', user);
+
+    return this.userModel
+      .find()
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .skip(offset)
+      .limit(limit)
+      .exec();
+  }
+
+  // 총 사용자 수 반환
+  async getTotalUsers(): Promise<number> {
+    return this.userModel.countDocuments().exec(); // 사용자 수 카운트
+  }
 }

@@ -1,12 +1,15 @@
 // src/withdraw-list/withdraw-list.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 @ObjectType()
 export class WithdrawList extends Document {
+  @Field(() => ID)
+  id!: string;
+
   @Prop({ required: true })
   @Field()
   email!: string;

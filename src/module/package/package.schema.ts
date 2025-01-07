@@ -25,6 +25,12 @@ export class Package extends Document {
   @Prop({ required: true, default: 'hide' })
   @Field()
   status!: string; // "show" or "hide"
+
+  @Field(() => String)
+  createdAt!: Date;
+
+  @Field(() => String)
+  updatedAt!: Date;
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);

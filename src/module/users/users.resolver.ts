@@ -1,8 +1,8 @@
 // src/users/users.resolver.ts
 
-import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query, Context, Int } from '@nestjs/graphql';
 import { UsersService } from './users.service';
-import { User } from './users.schema';
+import { GetUsersResponse, User } from './users.schema';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 
 @Resolver(() => User)
@@ -23,6 +23,21 @@ export class UsersResolver {
     }
 
     return userInfo;
+  }
+
+  @Query(() => GetUsersResponse) // 데이터와 총 사용자 수 반환
+  async getUsers(
+    @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number,
+    @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
+    @Context() context: any,
+  ): Promise<{ data: User[]; totalUsers: number }> {
+    const user = context.req.user; // 인증된 사용자 정보
+    const offset = (page - 1) * limit; // Offset 계산
+
+    const data = await this.usersService.getUsers(limit, offset, user);
+    const totalUsers = await this.usersService.getTotalUsers();
+
+    return { data, totalUsers };
   }
 
   @Mutation(() => String)

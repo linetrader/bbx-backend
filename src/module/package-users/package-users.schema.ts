@@ -1,12 +1,15 @@
 // src/module/package/package-users.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 @ObjectType()
 export class PackageUsers extends Document {
+  @Field(() => ID)
+  id!: string;
+
   @Prop({ required: true })
   @Field()
   userId!: string;
@@ -29,6 +32,9 @@ export class PackageUsers extends Document {
 
   @Field(() => String)
   createdAt!: Date;
+
+  @Field(() => String)
+  updatedAt!: Date;
 }
 
 export const PackageUsersSchema = SchemaFactory.createForClass(PackageUsers);

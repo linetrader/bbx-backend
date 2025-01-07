@@ -8,23 +8,12 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly jwtService: JwtService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
-    // console.log(
-    //   'AuthMiddleware - Incoming Authorization Header:',
-    //   req.headers.authorization,
-    // );
-
     const authHeader = req.headers.authorization;
 
+    //console.log('authHeader : ', authHeader);
+
     if (!authHeader) {
-      console.warn('No Authorization header found');
       req.user = undefined;
-      return next();
-    }
-
-    //console.log('AuthMiddleware - Incoming Authorization Header');
-
-    if (authHeader === 'login') {
-      req.user = { mode: 'login' };
       return next();
     }
 
@@ -37,9 +26,9 @@ export class AuthMiddleware implements NestMiddleware {
       req.user = decoded;
       return next();
     } catch (err) {
-      //console.error('AuthMiddleware - JWT verification failed:', err.message);
-      // JWT 검증 실패 시 응답을 종료
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res
+        .status(401)
+        .json({ message: 'Unauthorized: Invalid or expired token.' });
     }
   }
 }

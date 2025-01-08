@@ -10,10 +10,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PackageUsers } from './package-users.schema';
 import { Package } from '../package/package.schema';
-import { JwtService } from '@nestjs/jwt';
-import { Wallet } from '../wallets/wallets.schema';
+//import { JwtService } from '@nestjs/jwt';
 import { ContractsService } from '../contracts/contracts.service';
 import { MiningLogsService } from '../mining-logs/mining-logs.service'; // Import MiningLogsService
+import { WalletsService } from '../wallets/wallets.service';
+import { Wallet } from '../wallets/wallets.schema';
+import { PackageService } from '../package/package.service';
 
 //interface minitData
 
@@ -27,12 +29,10 @@ export class PackageUsersService implements OnModuleInit {
   constructor(
     @InjectModel(PackageUsers.name)
     private readonly packageUsersModel: Model<PackageUsers>,
-    @InjectModel(Package.name)
-    private readonly packageModel: Model<Package>,
-    @InjectModel(Wallet.name)
-    private readonly walletModel: Model<Wallet>,
+    private readonly packageService: PackageService,
+
+    private readonly walletsService: WalletsService,
     private readonly contractsService: ContractsService,
-    private readonly jwtService: JwtService,
     private readonly miningLogsService: MiningLogsService, // Add MiningLogsService as a dependency
   ) {}
 
@@ -46,7 +46,8 @@ export class PackageUsersService implements OnModuleInit {
    * 모든 패키지 데이터를 전역 변수에 저장
    */
   async initialMiningForAllPackages(): Promise<void> {
-    const allPackages = await this.packageModel.find({ status: 'show' }).exec();
+    //const allPackages = await this.packageModel.find({ status: 'show' }).exec();
+    const allPackages = await this.packageService.findShow();
 
     for (const pkg of allPackages) {
       if (pkg.miningProfit) {
@@ -102,7 +103,8 @@ export class PackageUsersService implements OnModuleInit {
   }
 
   private async getWallet(userId: string): Promise<Wallet> {
-    const wallet = await this.walletModel.findOne({ userId }).exec();
+    const wallet = await this.walletsService.findWalletById(userId);
+    //console.log('getWallet - ', wallet);
     if (!wallet) {
       throw new BadRequestException('Wallet not found for the user.');
     }
@@ -110,7 +112,9 @@ export class PackageUsersService implements OnModuleInit {
   }
 
   private async getPackage(packageId: string): Promise<Package> {
-    const selectedPackage = await this.packageModel.findById(packageId).exec();
+    //const selectedPackage = await this.packageModel.findById(packageId).exec();
+    const selectedPackage =
+      await this.packageService.findPackageById(packageId);
     if (!selectedPackage) {
       throw new BadRequestException('Selected package not found.');
     }
@@ -272,7 +276,8 @@ export class PackageUsersService implements OnModuleInit {
   ): Promise<boolean> {
     // 잔액 업데이트
     if (currency === 'USDT') {
-      const wallet = await this.walletModel.findOne({ userId }).exec();
+      const wallet = await this.walletsService.findWalletById(userId);
+      //console.log('adjustBalance - ', wallet);
       if (!wallet) {
         return false;
       }

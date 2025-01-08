@@ -35,18 +35,6 @@ type Wallet {
   updatedAt: String!
 }
 
-type Transaction {
-  id: ID!
-  type: String!
-  amount: String!
-  token: String!
-  transactionHash: String!
-  userId: String!
-  walletId: String!
-  createdAt: String!
-  updatedAt: String!
-}
-
 type GoogleOTP {
   id: ID!
   email: String!
@@ -59,6 +47,18 @@ type GoogleOTP {
 type GetWalletsResponse {
   data: [Wallet!]!
   totalWallets: Int!
+}
+
+type Transaction {
+  id: ID!
+  type: String!
+  amount: String!
+  token: String!
+  transactionHash: String!
+  userId: String!
+  walletId: String!
+  createdAt: String!
+  updatedAt: String!
 }
 
 type GenerateOtpOutput {
@@ -83,17 +83,6 @@ type PackageUsers {
   packageType: String!
   quantity: Float!
   miningBalance: Float!
-  createdAt: String!
-  updatedAt: String!
-}
-
-type Package {
-  id: ID!
-  name: String!
-  price: Float!
-  miningProfit: Float!
-  logInterval: Float!
-  status: String!
   createdAt: String!
   updatedAt: String!
 }
@@ -126,6 +115,17 @@ type DefaultContractTemplate {
   representative: String!
 }
 
+type Package {
+  id: ID!
+  name: String!
+  price: Float!
+  miningProfit: Float!
+  logInterval: Float!
+  status: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Query {
   getUserInfo: User!
   getUsers(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
@@ -153,7 +153,7 @@ type Mutation {
   verifyAndSaveOTP(otp: String!): Boolean!
   verifyOnlyOTP(otp: String!): Boolean!
   addPackage(name: String!, price: Float!, status: String!): Package!
-  changePackage(name: String!, price: Float!, miningInterval: Float!, status: String!): Package!
+  changePackage(name: String!, price: Float!, logInterval: Float!, status: String!): Package!
   purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!

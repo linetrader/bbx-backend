@@ -11,27 +11,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document } from 'mongoose';
 import { ethers } from 'ethers';
 import { Wallet } from './wallets.schema';
-import { JwtService } from '@nestjs/jwt';
-import { WalletsGateway } from './wallets.gateway';
-import { TransactionService } from 'src/module/transaction/transaction.service';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
-import { User } from '../users/users.schema';
-//import { MonitoringService } from './monitoring/monitoring.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class WalletsService {
   constructor(
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet & Document>,
-    @InjectModel(User.name) private readonly userModel: Model<User>, // User 모델 추가
-    private readonly transactionService: TransactionService,
-    private readonly jwtService: JwtService,
-    private readonly walletsGateway: WalletsGateway,
     private readonly googleOtpService: GoogleOTPService,
-    //private readonly monitoringService: MonitoringService,
-  ) {
-    //this.monitoringService.startMonitoringDeposits();
-  }
+    private readonly usersService: UsersService,
+  ) {}
 
   private savePrivateKeyToFile(walletId: string, privateKey: string): void {
     try {
@@ -52,6 +42,13 @@ export class WalletsService {
       console.error('Error saving private key to file:', error);
       throw new BadRequestException('Failed to save private key.');
     }
+  }
+
+  async findWalletById(userId: string) {
+    console.log('findWalletById - userId', userId);
+    const wallet = await this.walletModel.findOne({ userId }).exec();
+    console.log('findWalletById - wallet', wallet);
+    return wallet;
   }
 
   async saveWithdrawAddress(
@@ -162,7 +159,8 @@ export class WalletsService {
       throw new Error('Unauthorized: User information is missing.');
     }
 
-    const requestingUser = await this.userModel.findById(user.id).exec();
+    //const requestingUser = await this.userModel.findById(user.id).exec();
+    const requestingUser = await this.usersService.findUserById(user.id);
 
     if (!requestingUser) {
       throw new BadRequestException('Unauthorized: User not found.');

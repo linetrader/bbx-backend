@@ -11,9 +11,9 @@ import { Model } from 'mongoose';
 import { WithdrawList } from './withdraw-list.schema';
 import { GoogleOTPService } from '../google-otp/google-otp.service';
 import { UsersService } from 'src/module/users/users.service';
-import { TransactionService } from 'src/module/transaction/transaction.service';
-import { WalletsService } from '../wallets/wallets.service';
-import { JwtService } from '@nestjs/jwt';
+//import { TransactionService } from 'src/module/transaction/transaction.service';
+//import { WalletsService } from '../wallets/wallets.service';
+//import { JwtService } from '@nestjs/jwt';
 import { PackageUsersService } from '../package-users/package-users.service';
 
 @Injectable()
@@ -23,10 +23,10 @@ export class WithdrawListService implements OnModuleInit {
     private readonly withdrawListModel: Model<WithdrawList>,
 
     private readonly googleOtpService: GoogleOTPService,
-    private readonly jwtService: JwtService,
+    //private readonly jwtService: JwtService,
     private readonly userService: UsersService,
-    private readonly transactionService: TransactionService,
-    private readonly walletService: WalletsService,
+    //private readonly transactionService: TransactionService,
+    //private readonly walletService: WalletsService,
     private readonly packageUsersService: PackageUsersService,
   ) {}
   /**

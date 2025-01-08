@@ -1,6 +1,6 @@
 // contracts.resolver.ts
 
-import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
+import { Resolver, Query, Context } from '@nestjs/graphql';
 import { ContractsService } from './contracts.service';
 import { DefaultContractTemplate, Contract } from './contracts.schema';
 import { UnauthorizedException } from '@nestjs/common';

@@ -13,7 +13,12 @@ export class PackageResolver {
   @Query(() => [Package])
   async getPackages(@Context() context: any): Promise<Package[]> {
     const user = context.req.user; // 인증된 사용자 정보
-    return this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
+
+    const data = await this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
+
+    return data;
+
+    //return this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
   }
 
   // 패키지 추가
@@ -40,7 +45,7 @@ export class PackageResolver {
   async changePackage(
     @Args('name') name: string,
     @Args('price') price: number,
-    @Args('miningInterval') miningInterval: number,
+    @Args('logInterval') logInterval: number,
     @Args('status') status: string,
     @Context() context: any,
   ): Promise<Package> {
@@ -54,11 +59,6 @@ export class PackageResolver {
       );
     }
 
-    return this.packageService.changePackage(
-      name,
-      price,
-      //miningInterval,
-      status,
-    );
+    return this.packageService.changePackage(name, price, logInterval, status);
   }
 }

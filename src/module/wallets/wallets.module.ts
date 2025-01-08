@@ -8,20 +8,17 @@ import { Wallet, WalletSchema } from './wallets.schema';
 import { WalletsGateway } from './wallets.gateway';
 import { TransactionModule } from 'src/module/transaction/transaction.module';
 import { GoogleOTPModule } from 'src/module/google-otp/google-otp.module';
-//import { UsersModule } from '../users/users.module';
-import { User, UserSchema } from '../users/users.schema';
+import { UsersModule } from '../users/users.module';
+//import { User, UserSchema } from '../users/users.schema';
 //import { MonitoringService } from './monitoring/monitoring.service';
 //import { BscScanModule } from './bscscan/bscscan.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Wallet.name, schema: WalletSchema },
-      { name: User.name, schema: UserSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Wallet.name, schema: WalletSchema }]),
     TransactionModule,
     GoogleOTPModule,
-    //UsersModule,
+    UsersModule,
     //BscScanModule, // BscScanModule 추가
   ],
   providers: [
@@ -30,6 +27,6 @@ import { User, UserSchema } from '../users/users.schema';
     WalletsGateway,
     //MonitoringService,
   ],
-  exports: [MongooseModule, WalletsService], // WalletModel 내보내기
+  exports: [WalletsService], // WalletModel 내보내기
 })
 export class WalletsModule {}

@@ -24,7 +24,7 @@ export class Package extends Document {
 
   @Prop({ required: true, type: Number, default: 3600000 }) // 기본값 1시간 (밀리초 단위)
   @Field()
-  miningInterval!: number; // 마이닝 간격 (밀리초 단위)
+  logInterval!: number; // 로그 저장 간격 (밀리초 단위)
 
   @Prop({ required: true, default: 'hide' })
   @Field()

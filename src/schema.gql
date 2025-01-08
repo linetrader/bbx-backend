@@ -56,6 +56,11 @@ type GoogleOTP {
   updatedAt: String!
 }
 
+type GetWalletsResponse {
+  data: [Wallet!]!
+  totalWallets: Int!
+}
+
 type GenerateOtpOutput {
   qrCode: String!
   manualKey: String!
@@ -87,7 +92,7 @@ type Package {
   name: String!
   price: Float!
   miningProfit: Float!
-  miningInterval: Float!
+  logInterval: Float!
   status: String!
   createdAt: String!
   updatedAt: String!
@@ -125,6 +130,7 @@ type Query {
   getUserInfo: User!
   getUsers(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
   getWalletInfo: Wallet!
+  getWallets(limit: Int! = 10, page: Int! = 1): GetWalletsResponse!
 
   """Fetch all transactions for the user"""
   getTransactionList: [Transaction!]!

@@ -15,6 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { WalletsGateway } from './wallets.gateway';
 import { TransactionService } from 'src/module/transaction/transaction.service';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
+import { User } from '../users/users.schema';
 //import { MonitoringService } from './monitoring/monitoring.service';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class WalletsService {
   constructor(
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet & Document>,
+    @InjectModel(User.name) private readonly userModel: Model<User>, // User 모델 추가
     private readonly transactionService: TransactionService,
     private readonly jwtService: JwtService,
     private readonly walletsGateway: WalletsGateway,
@@ -118,7 +120,7 @@ export class WalletsService {
   }
 
   async createWallet(user: { id: string }): Promise<Wallet> {
-    console.log('[DEBUG] createWallet called with user:', user);
+    //console.log('[DEBUG] createWallet called with user:', user);
 
     if (!user || !user.id) {
       console.error('[ERROR] User is not authenticated');
@@ -129,11 +131,11 @@ export class WalletsService {
       .findOne({ userId: user.id })
       .exec();
     if (existingWallet) {
-      console.log(`[DEBUG] Wallet already exists for user ${user.id}`);
+      //console.log(`[DEBUG] Wallet already exists for user ${user.id}`);
       return existingWallet;
     }
 
-    console.log('[DEBUG] Creating new wallet');
+    //console.log('[DEBUG] Creating new wallet');
 
     const wallet = ethers.Wallet.createRandom();
     const newWallet = await this.walletModel.create({
@@ -143,10 +145,46 @@ export class WalletsService {
       usdtBalance: 0,
     });
 
-    console.log('[DEBUG] Saving private key');
+    //console.log('[DEBUG] Saving private key');
     this.savePrivateKeyToFile(String(newWallet._id), wallet.privateKey);
 
-    console.log('[DEBUG] Wallet created successfully:', newWallet);
+    //console.log('[DEBUG] Wallet created successfully:', newWallet);
     return newWallet;
+  }
+
+  // 페이징 처리된 지갑 데이터 가져오기
+  async getWallets(
+    limit: number,
+    offset: number,
+    user: { id: string },
+  ): Promise<Wallet[]> {
+    if (!user || !user.id) {
+      throw new Error('Unauthorized: User information is missing.');
+    }
+
+    const requestingUser = await this.userModel.findById(user.id).exec();
+
+    if (!requestingUser) {
+      throw new BadRequestException('Unauthorized: User not found.');
+    }
+
+    // 어드민 레벨 확인 (3, 2, 1)
+    if (requestingUser.userLevel > 3) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
+
+    return this.walletModel
+      .find()
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .skip(offset)
+      .limit(limit)
+      .exec();
+  }
+
+  // 총 지갑 수 반환
+  async getTotalWallets(): Promise<number> {
+    return this.walletModel.countDocuments().exec(); // 지갑 수 카운트
   }
 }

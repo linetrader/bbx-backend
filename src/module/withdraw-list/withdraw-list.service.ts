@@ -38,7 +38,7 @@ export class WithdrawListService implements OnModuleInit {
 
   // email을 파라미터로 받아서 Pending Withdrawals 처리
   async getPendingWithdrawals(email: string): Promise<WithdrawList[]> {
-    console.log('getPendingWithdrawals - emil', email);
+    //console.log('getPendingWithdrawals - emil', email);
     if (!email) {
       throw new UnauthorizedException('Email not found in user context.');
     }
@@ -75,7 +75,7 @@ export class WithdrawListService implements OnModuleInit {
       throw new UnauthorizedException('Invalid OTP.');
     }
 
-    console.log('otp', otp);
+    //console.log('otp', otp);
 
     // 지갑 자산 차감
     const walletUpdateResult = await this.deductFromWallet(

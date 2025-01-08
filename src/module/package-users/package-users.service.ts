@@ -21,7 +21,7 @@ import { MiningLogsService } from '../mining-logs/mining-logs.service'; // Impor
 export class PackageUsersService implements OnModuleInit {
   private packageData: Record<
     string,
-    { name: string; miningProfit: number; miningInterval: number }
+    { name: string; miningProfit: number; logInterval: number }
   > = {}; // 패키지 데이터를 저장하는 전역 변수
 
   constructor(
@@ -53,7 +53,7 @@ export class PackageUsersService implements OnModuleInit {
         this.packageData[pkg.name] = {
           name: pkg.name,
           miningProfit: pkg.miningProfit,
-          miningInterval: pkg.miningInterval,
+          logInterval: pkg.logInterval,
         };
       } else {
         console.warn(`Package ${pkg.name} does not have valid miningProfit.`);
@@ -68,8 +68,7 @@ export class PackageUsersService implements OnModuleInit {
    */
   async startMiningForPackage(): Promise<void> {
     for (const packageName in this.packageData) {
-      const { name, miningProfit, miningInterval } =
-        this.packageData[packageName];
+      const { name, miningProfit, logInterval } = this.packageData[packageName];
 
       const packageUsers = await this.packageUsersModel
         .find({ packageType: name })
@@ -88,7 +87,7 @@ export class PackageUsersService implements OnModuleInit {
             packageUser.userId,
             packageUser.packageType,
             totalProfit,
-            miningInterval,
+            logInterval,
           );
 
           //console.log(`User ${packageUser.userId} mined ${totalProfit} for package ${name}`,);

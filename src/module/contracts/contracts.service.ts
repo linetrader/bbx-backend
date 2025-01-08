@@ -92,59 +92,6 @@ export class ContractsService implements OnModuleInit {
   async initializeDefaultContract(): Promise<DefaultContract> {
     const exists = await this.defaultContractModel.findOne().exec();
     if (!exists) {
-      //     const defaultContract = new this.defaultContractModel({
-      //       content: [
-      //         `
-      // Mining Management Agreement
-
-      // This Mining Management Agreement is entered into by and between NIA Corporation (hereinafter referred to as "Party A"), represented by its CEO, Yoon Jung-Hoon, and ___________ (hereinafter referred to as "Party B") under the following terms and conditions regarding the entrusted management of Dogecoin mining machines.
-      //         `,
-      //         `
-      // Article 1. Purpose
-      // This Agreement aims to define the rights and obligations concerning Party A’s provision of cloud server capacity for Party B using mining computers owned by Party A to mine Dogecoin during the contract period, in return for payment of management fees by Party B.
-      //         `,
-      //         `
-      // Article 2. Entrusted Responsibilities
-      // 1) Party A shall maintain the performance of the mining computers to ensure that the designated graphics cards operate in their optimal condition throughout the contract period, exercising due care as a prudent manager to maximize Dogecoin mining.
-      // 2) Party A shall make efforts to prevent hacking attempts by third parties.
-      //         `,
-      //         `
-      // Article 3. Management Fees
-      // 1) The management fee shall be 430 USDT (Tether), which Party B shall pay in advance to Party A upon signing the Agreement. In return, Party A shall provide Party B with 15TH (hash rate).
-      // 2) Dogecoins mined through the hash rate purchased by Party B shall be distributed as follows: 85% to Party B and 15% to Party A.
-      // 3) The management period shall be three (3) years, and upon the expiration of the 3-year term, ownership of the cloud server entrusted for mining by Party B shall be transferred to Party A.
-      //         `,
-      //         `
-      // Article 4. Management Reports
-      // 1) Party A shall deposit the mined Dogecoins into Party B's designated digital wallet. Party A shall not bear any responsibility for fluctuations in the value of the coins deposited into the wallet.
-      // 2) Party B acknowledges that the quantity of mined coins managed by Party A may vary and agrees not to raise any objections to Party A regarding the number of coins deposited on the date of transfer. This includes absolving Party A of any responsibility for losses caused by Party B's wallet management after proper coin transfer.
-      // 3) The volume of mined Dogecoins may vary depending on the Dogecoin mining environment.
-      // 4) By signing below, both parties acknowledge and agree to the terms and conditions stated in this Agreement.
-      //         `,
-      //         `
-      // Article 5. Prohibition of Assignment
-      // Neither Party A nor Party B may assign or offer as collateral any rights under this Agreement to a third party. Any attempt to assign or provide collateral in violation of this provision shall not be enforceable against the other party.
-      //         `,
-      //         `
-      // Article 6. Termination of the Agreement
-      // 1) Party B cannot terminate this Agreement due to a mere change of mind.
-      // 2) Either Party A or Party B may terminate this Agreement in writing if it becomes impossible to achieve the purpose of the Agreement due to a breach of contract by the other party. In such a case, the legal relationships concerning the management already performed remain unaffected, and the contractual relationship shall cease to exist for the future.
-      //         `,
-      //         `
-      // Article 7. Force Majeure
-      // If the performance of this Agreement becomes impossible or the purpose of the Agreement cannot be achieved due to force majeure (e.g., natural disasters), either party may notify the other party in writing and terminate the Agreement. In such cases, the parties shall be mutually exempt from liability for damages. However, obligations incurred prior to the impossibility of performance shall remain valid.
-      //         `,
-      //         `
-      // Article 8. Jurisdiction
-      // Any disputes arising in connection with this Agreement shall be resolved by the court having jurisdiction over the address of Party A.
-      //         `,
-      //       ],
-      //       companyName: 'NiA Corporation Co., Ltd.',
-      //       companyAddress:
-      //         '18, Teheran-ro 20-gil, Gangnam-gu, Seoul, Republic of Korea',
-      //       businessNumber: '765-87-02260',
-      //       representative: 'YunJungHoon',
-      //     });
       const defaultContract = new this.defaultContractModel({
         content: [
           `

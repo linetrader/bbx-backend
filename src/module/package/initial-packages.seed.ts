@@ -7,14 +7,14 @@ export async function seedInitialPackages(packageModel: Model<Package>) {
   const initialPackages = [
     {
       name: 'BTC',
-      price: 1,
+      price: 430,
       miningProfit: 0.000013,
       status: 'hide',
     },
     {
       name: 'DOGE',
-      price: 1,
-      miningProfit: 0.0024316,
+      price: 430,
+      miningProfit: 0.010415,
       status: 'show',
     },
     {

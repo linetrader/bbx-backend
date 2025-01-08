@@ -19,6 +19,7 @@ import { PackageUsersModule } from './module/package-users/package-users.module'
 import { ContractsModule } from './module/contracts/contracts.module';
 import { MonitoringModule } from './module/monitoring/monitoring.module';
 import { MiningLogsModule } from './module/mining-logs/mining-logs.module';
+import { TotalMiningModule } from './module/total-mining/total-mining.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { MiningLogsModule } from './module/mining-logs/mining-logs.module';
     ContractsModule,
     MonitoringModule,
     MiningLogsModule,
+    TotalMiningModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -102,6 +102,7 @@ type Contract {
   packageName: String!
   quantity: Float!
   totalPrice: Float!
+  status: String!
   createdAt: String!
   updatedAt: String!
 }
@@ -139,8 +140,8 @@ type Query {
   getUserMiningData: [PackageUsers!]!
   getDefaultContract: DefaultContractTemplate!
 
-  """Fetch all contracts for the user"""
-  getPackageRecords: [Contract!]!
+  """Fetch all contracts for the user with an optional status filter"""
+  getPackageRecords(status: String! = "approved"): [Contract!]!
   getPendingWithdrawals: [WithdrawList!]!
 }
 

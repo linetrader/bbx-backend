@@ -24,6 +24,7 @@ export class ContractsService implements OnModuleInit {
   // 모듈 초기화 시 호출
   async onModuleInit() {
     await this.initializeDefaultContract();
+    await this.updateMissingStatusFields();
   }
 
   async getDefaultContract(): Promise<DefaultContract> {
@@ -62,30 +63,54 @@ export class ContractsService implements OnModuleInit {
   }
 
   // 특정 사용자 구매 기록 조회
-  async getPackageRecordsByUser(user: { id: string }): Promise<Contract[]> {
+  async getPackageRecordsByUser(
+    user: { id: string },
+    status: string,
+  ): Promise<Contract[]> {
     try {
       if (!user || !user.id) {
         throw new UnauthorizedException('User not authenticated');
       }
 
-      //console.log('getPackageRecordsByUser - user.id : ', user.id);
-
       const userId = user.id;
+
       const packages = await this.contractModel
-        .find({ userId })
-        .sort({ createdAt: -1 })
+        .find({ userId, status }) // userId와 status로 필터링
+        .sort({ createdAt: -1 }) // 최신순 정렬
         .exec();
 
-      if (!packages) {
-        console.log('Packages not found.');
+      if (!packages || packages.length === 0) {
+        console.log(`No packages found for status: ${status}`);
         throw new BadRequestException('Packages not found.');
       }
 
-      //console.log('getPackageRecordsByUser - packages : ', packages);
-
       return packages;
-    } catch {
-      throw new UnauthorizedException('Invalid or expired token.');
+    } catch (error) {
+      const err = error as Error;
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  private async updateMissingStatusFields(): Promise<void> {
+    try {
+      const packagesWithoutStatus = await this.contractModel
+        .find({ status: { $exists: false } }) // status 필드가 없는 데이터 검색
+        .exec();
+
+      if (packagesWithoutStatus.length > 0) {
+        console.log(
+          `Found ${packagesWithoutStatus.length} packages without status. Updating to 'approved'.`,
+        );
+
+        for (const pkg of packagesWithoutStatus) {
+          pkg.status = 'approved'; // 기본값 설정
+          await pkg.save();
+        }
+
+        console.log('All missing status fields have been updated.');
+      }
+    } catch (error) {
+      console.error('Error updating missing status fields:', error);
     }
   }
 

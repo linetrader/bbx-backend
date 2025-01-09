@@ -1,6 +1,6 @@
 // contracts.resolver.ts
 
-import { Resolver, Query, Context } from '@nestjs/graphql';
+import { Resolver, Query, Context, Args } from '@nestjs/graphql';
 import { ContractsService } from './contracts.service';
 import { DefaultContractTemplate, Contract } from './contracts.schema';
 import { UnauthorizedException } from '@nestjs/common';
@@ -34,10 +34,15 @@ export class ContractsResolver {
 
   // 인증된 사용자의 모든 계약을 가져오는 쿼리
   @Query(() => [Contract], {
-    description: 'Fetch all contracts for the user',
+    description:
+      'Fetch all contracts for the user with an optional status filter',
   })
-  async getPackageRecords(@Context() context: any): Promise<Contract[]> {
+  async getPackageRecords(
+    @Args('status', { type: () => String, defaultValue: 'approved' })
+    status: string, // 기본값: 'approved'
+    @Context() context: any,
+  ): Promise<Contract[]> {
     const user = context.req.user; // 인증된 사용자 정보
-    return await this.contractsService.getPackageRecordsByUser(user);
+    return await this.contractsService.getPackageRecordsByUser(user, status);
   }
 }

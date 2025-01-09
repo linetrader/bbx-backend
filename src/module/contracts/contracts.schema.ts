@@ -62,6 +62,10 @@ export class Contract extends Document {
   @Field(() => Number)
   totalPrice!: number;
 
+  @Prop({ required: true })
+  @Field(() => String)
+  status!: string; // pending, approved, rejected
+
   @Field(() => String)
   createdAt!: Date;
 
@@ -114,4 +118,7 @@ export class CreateContractInput {
 
   @Field(() => Number)
   totalPrice!: number;
+
+  @Field(() => String)
+  status!: string;
 }

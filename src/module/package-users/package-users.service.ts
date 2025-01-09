@@ -175,6 +175,7 @@ export class PackageUsersService implements OnModuleInit {
       packageName,
       quantity,
       totalPrice,
+      status: 'pending',
     });
   }
 
@@ -214,7 +215,10 @@ export class PackageUsersService implements OnModuleInit {
 
       const totalPrice = selectedPackage.price * quantity;
 
-      // 4. 계약서 생성
+      // 4. 지갑 잔액 차감
+      await this.deductWalletBalance(myWallet, totalPrice);
+
+      // 5. 계약서 생성
       const contractCreated = await this.createContract(
         customerName,
         customerPhone,
@@ -223,22 +227,20 @@ export class PackageUsersService implements OnModuleInit {
         selectedPackage.name,
         quantity,
         totalPrice,
+        //status: 'pending'
       );
 
       if (!contractCreated) {
         throw new BadRequestException('Failed to create contract.');
       }
 
-      // 5. 사용자 패키지 업데이트
-      await this.updateUserPackage(
-        user.id,
-        selectedPackage.name,
-        myWallet.id,
-        quantity,
-      );
-
-      // 6. 지갑 잔액 차감
-      await this.deductWalletBalance(myWallet, totalPrice);
+      // 6. 사용자 패키지 업데이트
+      // await this.updateUserPackage(
+      //   user.id,
+      //   selectedPackage.name,
+      //   myWallet.id,
+      //   quantity,
+      // );
 
       return `Successfully purchased ${quantity} of ${selectedPackage.name}.`;
     } catch (error) {

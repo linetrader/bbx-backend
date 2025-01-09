@@ -36,6 +36,33 @@ export class UsersService {
     return user;
   }
 
+  async getUserName(userId: string): Promise<string | null> {
+    if (!userId || typeof userId !== 'string') {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    try {
+      const user = await this.userModel.findById(userId).exec(); // userId는 문자열이어야 합니다
+      return user?.username || null;
+    } catch (error) {
+      console.error('[getUserName] Error fetching user:', error);
+      throw new BadRequestException('Failed to fetch user');
+    }
+  }
+
+  async getUserNameByEmail(email: string): Promise<string | null> {
+    if (!email || typeof email !== 'string') {
+      throw new BadRequestException('Invalid email');
+    }
+    try {
+      const user = await this.userModel.findOne({ email }).exec();
+      return user?.username || null;
+    } catch (error) {
+      console.error('[getUserName] Error fetching user:', error);
+      throw new BadRequestException('Failed to fetch user');
+    }
+  }
+
   async getUserInfo(user: { id: string }): Promise<User | null> {
     if (!user || !user.id) {
       throw new UnauthorizedException('User not authenticated.');

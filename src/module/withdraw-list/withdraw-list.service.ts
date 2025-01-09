@@ -15,6 +15,7 @@ import { UsersService } from 'src/module/users/users.service';
 //import { WalletsService } from '../wallets/wallets.service';
 //import { JwtService } from '@nestjs/jwt';
 import { PackageUsersService } from '../package-users/package-users.service';
+import { GetPendingWithdrawalsResponse } from './dto/get-pending-withdrawals-response.dto';
 
 @Injectable()
 export class WithdrawListService implements OnModuleInit {
@@ -24,7 +25,7 @@ export class WithdrawListService implements OnModuleInit {
 
     private readonly googleOtpService: GoogleOTPService,
     //private readonly jwtService: JwtService,
-    private readonly userService: UsersService,
+    private readonly usersService: UsersService,
     //private readonly transactionService: TransactionService,
     //private readonly walletService: WalletsService,
     private readonly packageUsersService: PackageUsersService,
@@ -34,6 +35,47 @@ export class WithdrawListService implements OnModuleInit {
    */
   async onModuleInit() {
     console.log('WithdrawListService - onModuleInit');
+  }
+
+  async getPendingWithdrawalsAdmin(
+    limit: number,
+    offset: number,
+    user: { id: string },
+  ): Promise<GetPendingWithdrawalsResponse[]> {
+    const requestingUser = await this.usersService.findUserById(user.id);
+
+    if (!requestingUser || requestingUser.userLevel > 3) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
+
+    const withdrawals = await this.withdrawListModel
+      .find({ status: 'pending' }) // "pending" 상태의 데이터 필터링
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .skip(offset)
+      .limit(limit)
+      .exec();
+
+    return Promise.all(
+      withdrawals.map(async (withdrawal) => {
+        const username = await this.usersService.getUserNameByEmail(
+          withdrawal.email,
+        );
+        return {
+          id: withdrawal.id,
+          username: username || 'Unknown',
+          currency: withdrawal.currency,
+          amount: withdrawal.amount,
+          createdAt: withdrawal.createdAt,
+          updatedAt: withdrawal.updatedAt,
+        };
+      }),
+    );
+  }
+
+  async getTotalPendingWithdrawals(): Promise<number> {
+    return this.withdrawListModel.countDocuments({ status: 'pending' }).exec();
   }
 
   // email을 파라미터로 받아서 Pending Withdrawals 처리
@@ -104,7 +146,7 @@ export class WithdrawListService implements OnModuleInit {
     withdrawalId: string,
     email: string,
   ): Promise<boolean> {
-    const admin = await this.userService.findUserByEmail(email);
+    const admin = await this.usersService.findUserByEmail(email);
 
     if (!admin || (admin.userLevel !== 1 && admin.userLevel !== 2)) {
       throw new UnauthorizedException(
@@ -130,7 +172,7 @@ export class WithdrawListService implements OnModuleInit {
     withdrawalId: string,
     email: string,
   ): Promise<boolean> {
-    const admin = await this.userService.findUserByEmail(email);
+    const admin = await this.usersService.findUserByEmail(email);
 
     if (!admin || (admin.userLevel !== 1 && admin.userLevel !== 2)) {
       throw new UnauthorizedException(

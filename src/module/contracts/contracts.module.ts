@@ -9,6 +9,7 @@ import {
   DefaultContractSchema,
 } from './contracts.default.schema';
 import { Contract, ContractSchema } from './contracts.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Contract, ContractSchema } from './contracts.schema';
       { name: DefaultContract.name, schema: DefaultContractSchema },
       { name: Contract.name, schema: ContractSchema },
     ]),
+    UsersModule,
   ],
   providers: [ContractsResolver, ContractsService],
   exports: [ContractsService], // ContractsService export 추가

@@ -1,9 +1,10 @@
 // contracts.resolver.ts
 
-import { Resolver, Query, Context, Args } from '@nestjs/graphql';
+import { Resolver, Query, Context, Args, Int } from '@nestjs/graphql';
 import { ContractsService } from './contracts.service';
 import { DefaultContractTemplate, Contract } from './contracts.schema';
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { GetPendingContractsPaginatedResponse } from './dto/get-pending-contracts-response.dto';
 
 @Resolver()
 export class ContractsResolver {
@@ -30,6 +31,29 @@ export class ContractsResolver {
       businessNumber: defaultContract.businessNumber,
       representative: defaultContract.representative,
     };
+  }
+
+  @Query(() => GetPendingContractsPaginatedResponse)
+  async getPendingContractsAdmin(
+    @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number,
+    @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
+    @Context() context: any,
+  ): Promise<GetPendingContractsPaginatedResponse> {
+    const user = context.req.user;
+    if (!user) {
+      throw new BadRequestException('Unauthorized: User not authenticated.');
+    }
+
+    const offset = (page - 1) * limit;
+    const data = await this.contractsService.getPendingContractsAdmin(
+      limit,
+      offset,
+      user,
+    );
+    const totalContracts =
+      await this.contractsService.getTotalPendingContracts();
+
+    return { data, totalContracts };
   }
 
   // 인증된 사용자의 모든 계약을 가져오는 쿼리

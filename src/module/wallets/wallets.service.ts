@@ -10,7 +10,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document } from 'mongoose';
 import { ethers } from 'ethers';
-import { Wallet } from './wallets.schema';
+import { Wallet, WalletsAdmin } from './wallets.schema';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
 import { UsersService } from '../users/users.service';
 
@@ -150,35 +150,41 @@ export class WalletsService {
   }
 
   // 페이징 처리된 지갑 데이터 가져오기
-  async getWallets(
+  async getWalletsAdmin(
     limit: number,
     offset: number,
     user: { id: string },
-  ): Promise<Wallet[]> {
-    if (!user || !user.id) {
-      throw new Error('Unauthorized: User information is missing.');
-    }
-
-    //const requestingUser = await this.userModel.findById(user.id).exec();
+  ): Promise<WalletsAdmin[]> {
     const requestingUser = await this.usersService.findUserById(user.id);
-
-    if (!requestingUser) {
-      throw new BadRequestException('Unauthorized: User not found.');
-    }
-
-    // 어드민 레벨 확인 (3, 2, 1)
-    if (requestingUser.userLevel > 3) {
+    if (!requestingUser || requestingUser.userLevel > 3) {
       throw new BadRequestException(
         'Unauthorized: Access is restricted to admins only.',
       );
     }
 
-    return this.walletModel
+    const wallets = await this.walletModel
       .find()
-      .sort({ createdAt: -1 }) // 최신순 정렬
+      .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
       .exec();
+
+    return Promise.all(
+      wallets.map(async (wallet) => {
+        //console.log('getWalletsAdmin - wallet.userId:', wallet.userId);
+        //console.log('getWalletsAdmin - wallet.id:', wallet.id);
+        const username = await this.usersService.getUserName(wallet.userId);
+        return {
+          id: wallet.id,
+          username: username || 'Unknown',
+          address: wallet.address,
+          whithdrawAddress: wallet.whithdrawAddress || '',
+          usdtBalance: wallet.usdtBalance || 0.0,
+          createdAt: wallet.createdAt,
+          updatedAt: wallet.updatedAt,
+        };
+      }),
+    );
   }
 
   // 총 지갑 수 반환

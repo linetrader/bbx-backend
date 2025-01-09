@@ -32,7 +32,7 @@ export class Contract extends Document {
 
   @Prop({ required: true })
   @Field(() => String)
-  representative!: string;
+  representative!: string; // 대표명
 
   @Prop({ required: true })
   @Field(() => String)

@@ -11,6 +11,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DefaultContract } from './contracts.default.schema';
 import { Contract, CreateContractInput } from './contracts.schema';
+import { UsersService } from '../users/users.service';
+import { GetPendingContractsResponse } from './dto/get-pending-contracts-response.dto';
 
 @Injectable()
 export class ContractsService implements OnModuleInit {
@@ -19,6 +21,7 @@ export class ContractsService implements OnModuleInit {
     private readonly defaultContractModel: Model<DefaultContract>,
     @InjectModel(Contract.name)
     private readonly contractModel: Model<Contract>,
+    private readonly usersService: UsersService, // 유저 서비스 추가
   ) {}
 
   // 모듈 초기화 시 호출
@@ -34,6 +37,47 @@ export class ContractsService implements OnModuleInit {
     }
     //console.log(defaultContract);
     return defaultContract;
+  }
+
+  async getPendingContractsAdmin(
+    limit: number,
+    offset: number,
+    user: { id: string },
+  ): Promise<GetPendingContractsResponse[]> {
+    const requestingUser = await this.usersService.findUserById(user.id);
+
+    if (!requestingUser || requestingUser.userLevel > 3) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
+
+    const contracts = await this.contractModel
+      .find({ status: 'pending' })
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .skip(offset)
+      .limit(limit)
+      .exec();
+
+    return Promise.all(
+      contracts.map(async (contract) => {
+        const username = await this.usersService.getUserName(contract.userId);
+
+        return {
+          id: contract.id,
+          username: username || 'Unknown',
+          packageName: contract.packageName,
+          quantity: contract.quantity,
+          totalPrice: contract.totalPrice,
+          createdAt: contract.createdAt,
+          updatedAt: contract.updatedAt,
+        };
+      }),
+    );
+  }
+
+  async getTotalPendingContracts(): Promise<number> {
+    return this.contractModel.countDocuments({ status: 'pending' }).exec();
   }
 
   async createContract(input: CreateContractInput): Promise<boolean> {

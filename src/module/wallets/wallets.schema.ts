@@ -4,7 +4,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 
-@Schema({ timestamps: true }) // timestamps 옵션 활성화
+@Schema({ timestamps: true })
 @ObjectType()
 export class Wallet extends Document {
   @Field(() => ID)
@@ -34,3 +34,27 @@ export class Wallet extends Document {
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);
+
+@ObjectType()
+export class WalletsAdmin {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  username!: string;
+
+  @Field()
+  address!: string;
+
+  @Field()
+  whithdrawAddress!: string;
+
+  @Field()
+  usdtBalance!: number;
+
+  @Field(() => String)
+  createdAt!: Date;
+
+  @Field(() => String)
+  updatedAt!: Date;
+}

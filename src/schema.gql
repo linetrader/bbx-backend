@@ -35,6 +35,16 @@ type Wallet {
   updatedAt: String!
 }
 
+type WalletsAdmin {
+  id: ID!
+  username: String!
+  address: String!
+  whithdrawAddress: String!
+  usdtBalance: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type GoogleOTP {
   id: ID!
   email: String!
@@ -44,8 +54,8 @@ type GoogleOTP {
   updatedAt: String!
 }
 
-type GetWalletsResponse {
-  data: [Wallet!]!
+type GetAdminWalletsResponse {
+  data: [WalletsAdmin!]!
   totalWallets: Int!
 }
 
@@ -127,11 +137,40 @@ type Package {
   updatedAt: String!
 }
 
+type GetPendingWithdrawalsResponse {
+  id: ID!
+  username: String!
+  currency: String!
+  amount: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GetPendingWithdrawalsPaginatedResponse {
+  data: [GetPendingWithdrawalsResponse!]!
+  totalWithdrawals: Int!
+}
+
+type GetPendingContractsResponse {
+  id: String!
+  username: String!
+  packageName: String!
+  quantity: Int!
+  totalPrice: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GetPendingContractsPaginatedResponse {
+  data: [GetPendingContractsResponse!]!
+  totalContracts: Int!
+}
+
 type Query {
   getUserInfo: User!
   getUsers(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
   getWalletInfo: Wallet!
-  getWallets(limit: Int! = 10, page: Int! = 1): GetWalletsResponse!
+  getWalletsAdmin(limit: Int! = 10, page: Int! = 1): GetAdminWalletsResponse!
 
   """Fetch all transactions for the user"""
   getTransactionList: [Transaction!]!
@@ -139,9 +178,11 @@ type Query {
   getPackages: [Package!]!
   getUserMiningData: [PackageUsers!]!
   getDefaultContract: DefaultContractTemplate!
+  getPendingContractsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingContractsPaginatedResponse!
 
   """Fetch all contracts for the user with an optional status filter"""
   getPackageRecords(status: String! = "approved"): [Contract!]!
+  getPendingWithdrawalsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingWithdrawalsPaginatedResponse!
   getPendingWithdrawals: [WithdrawList!]!
 }
 

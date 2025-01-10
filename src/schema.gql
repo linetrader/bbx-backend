@@ -151,6 +151,21 @@ type GetPendingWithdrawalsPaginatedResponse {
   totalWithdrawals: Int!
 }
 
+type GetMiningCustomerResponse {
+  id: ID!
+  username: String!
+  packageType: String!
+  quantity: Float!
+  miningBalance: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GetMiningCustomersResponse {
+  data: [GetMiningCustomerResponse!]!
+  totalCustomers: Float!
+}
+
 type GetPendingContractsResponse {
   id: String!
   username: String!
@@ -168,7 +183,9 @@ type GetPendingContractsPaginatedResponse {
 
 type Query {
   getUserInfo: User!
-  getUsers(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
+
+  """Get users under my network"""
+  getUsersUnderMyNetwork(limit: Int! = 10, page: Int! = 1): GetUsersResponse!
   getWalletInfo: Wallet!
   getWalletsAdmin(limit: Int! = 10, page: Int! = 1): GetAdminWalletsResponse!
 
@@ -176,6 +193,9 @@ type Query {
   getTransactionList: [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
+
+  """Fetch mining customers with pagination for admin"""
+  getMiningCustomers(limit: Int! = 10, page: Int! = 1): GetMiningCustomersResponse!
   getUserMiningData: [PackageUsers!]!
   getDefaultContract: DefaultContractTemplate!
   getPendingContractsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingContractsPaginatedResponse!
@@ -189,13 +209,14 @@ type Query {
 type Mutation {
   register(email: String!, username: String!, firstname: String!, lastname: String!, password: String!, referrer: String): String!
   login(email: String!, password: String!): String!
+
+  """Update user details"""
+  updateUser(userId: String!, username: String, firstname: String, lastname: String, email: String, status: String, referrer: String, userLevel: Int): String!
   createWallet: Wallet!
   saveWithdrawAddress(newAddress: String!, otp: String!): Boolean!
   generateOTP: GenerateOtpOutput!
   verifyAndSaveOTP(otp: String!): Boolean!
   verifyOnlyOTP(otp: String!): Boolean!
-  addPackage(name: String!, price: Float!, status: String!): Package!
-  changePackage(name: String!, price: Float!, logInterval: Float!, status: String!): Package!
   purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!

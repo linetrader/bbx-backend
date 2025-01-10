@@ -16,6 +16,8 @@ import { MiningLogsService } from '../mining-logs/mining-logs.service'; // Impor
 import { WalletsService } from '../wallets/wallets.service';
 import { Wallet } from '../wallets/wallets.schema';
 import { PackageService } from '../package/package.service';
+import { GetMiningCustomerResponse } from './dto/package-users.dto';
+import { UsersService } from '../users/users.service';
 
 //interface minitData
 
@@ -33,13 +35,62 @@ export class PackageUsersService implements OnModuleInit {
 
     private readonly walletsService: WalletsService,
     private readonly contractsService: ContractsService,
-    private readonly miningLogsService: MiningLogsService, // Add MiningLogsService as a dependency
+    private readonly miningLogsService: MiningLogsService,
+    private readonly usersService: UsersService,
   ) {}
 
   async onModuleInit() {
-    console.log('Starting mining process for active packages...');
+    //console.log('Starting mining process for active packages...');
     await this.initialMiningForAllPackages();
     //this.startMiningForPackage();
+  }
+
+  async getMiningCustomers(
+    limit: number,
+    offset: number,
+    user: { id: string },
+  ): Promise<{ data: GetMiningCustomerResponse[]; totalCustomers: number }> {
+    // 1. 요청 사용자가 어드민인지 확인
+    const requestingUser = await this.usersService.isValidAdmin(user.id);
+    if (!requestingUser) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
+
+    // 2. 현재 사용자(user.id) 산하의 userIds 가져오기
+    const userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
+
+    // 3. userIds를 기준으로 패키지 사용자 정보 검색
+    const packageUsers = await this.packageUsersModel
+      .find({ userId: { $in: userIds } })
+      .sort({ createdAt: -1 }) // 최신순 정렬
+      .skip(offset) // 페이징 처리
+      .limit(limit)
+      .exec();
+
+    // 4. userIds 기반 총 마이닝 고객 수 계산
+    const totalCustomers = await this.packageUsersModel
+      .countDocuments({ userId: { $in: userIds } })
+      .exec();
+
+    // 5. 데이터를 GetMiningCustomerResponse 형식으로 변환
+    const data = await Promise.all(
+      packageUsers.map(async (user) => {
+        const username = await this.usersService.getUserName(user.userId);
+        return {
+          id: user.id,
+          username: username || 'Unknown',
+          packageType: user.packageType,
+          quantity: user.quantity,
+          miningBalance: user.miningBalance,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+      }),
+    );
+
+    return { data, totalCustomers };
   }
 
   /**
@@ -61,7 +112,7 @@ export class PackageUsersService implements OnModuleInit {
       }
     }
 
-    console.log('Package data initialized:', this.packageData);
+    //console.log('Package data initialized:', this.packageData);
   }
 
   /**

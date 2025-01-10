@@ -1,6 +1,6 @@
 // src/users/users.schema.ts
 
-import { Field, ObjectType, ID, Int } from '@nestjs/graphql';
+import { Field, ObjectType, ID } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -38,7 +38,7 @@ export class User extends Document {
   @Field()
   email_verified!: boolean;
 
-  @Prop({ type: String, required: false })
+  @Prop({ type: String, index: true })
   @Field({ nullable: true })
   referrer?: string;
 
@@ -58,17 +58,3 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-@ObjectType()
-export class GetUsersResponse {
-  @Field(() => [User]) // 사용자 배열
-  data: User[];
-
-  @Field(() => Int) // 총 사용자 수
-  totalUsers: number;
-
-  constructor(data: User[], totalUsers: number) {
-    this.data = data;
-    this.totalUsers = totalUsers;
-  }
-}

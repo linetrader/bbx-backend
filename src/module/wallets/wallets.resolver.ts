@@ -28,8 +28,13 @@ export class WalletsResolver {
     }
 
     const offset = (page - 1) * limit;
-    const data = await this.walletsService.getWalletsAdmin(limit, offset, user);
-    const totalWallets = await this.walletsService.getTotalWallets();
+
+    // 지갑 데이터와 총 사용자 수를 함께 반환
+    const { data, totalWallets } = await this.walletsService.getWalletsAdmin(
+      limit,
+      offset,
+      user,
+    );
 
     return { data, totalWallets };
   }

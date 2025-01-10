@@ -2,8 +2,8 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Cron } from '@nestjs/schedule';
-import { ConfigService } from '@nestjs/config';
+//import { Cron } from '@nestjs/schedule';
+//import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 import { Model } from 'mongoose';
@@ -18,10 +18,10 @@ export class TotalMiningService {
   constructor(
     @InjectModel(TotalMining.name)
     private readonly totalMiningModel: Model<TotalMining>,
-    private readonly configService: ConfigService, // ConfigService 주입
+    //private readonly configService: ConfigService, // ConfigService 주입
   ) {
-    const cronExpression = this.configService.get<string>('CRON_EXPRESSION');
-    console.log('CRON_EXPRESSION from ConfigService:', cronExpression);
+    //const cronExpression = this.configService.get<string>('CRON_EXPRESSION');
+    //console.log('CRON_EXPRESSION from ConfigService:', cronExpression);
 
     this.axiosInstance = axios.create({
       baseURL: 'https://bitboostx.com', // 사이트 기본 URL
@@ -33,10 +33,10 @@ export class TotalMiningService {
   }
 
   // 매 분마다 실행되는 작업
-  @Cron('0 */1 * * *')
+  //@Cron('0 */1 * * *')
   async handleCron() {
     try {
-      this.logger.debug('Cron job running based on CRON_EXPRESSION from .env');
+      //this.logger.debug('Cron job running based on CRON_EXPRESSION from .env');
 
       // 쿠키가 없거나 만료된 경우 로그인 수행
       if (!this.cookies || !(await this.isCookieValid())) {

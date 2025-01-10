@@ -2,8 +2,9 @@
 
 import { Resolver, Mutation, Args, Query, Context, Int } from '@nestjs/graphql';
 import { UsersService } from './users.service';
-import { GetUsersResponse, User } from './users.schema';
+import { User } from './users.schema';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { GetUsersResponse } from './dto/login-response.dto';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -25,19 +26,24 @@ export class UsersResolver {
     return userInfo;
   }
 
-  @Query(() => GetUsersResponse) // 데이터와 총 사용자 수 반환
-  async getUsers(
+  @Query(() => GetUsersResponse, { description: 'Get users under my network' })
+  async getUsersUnderMyNetwork(
     @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Context() context: any,
-  ): Promise<{ data: User[]; totalUsers: number }> {
+  ): Promise<GetUsersResponse> {
     const user = context.req.user; // 인증된 사용자 정보
-    const offset = (page - 1) * limit; // Offset 계산
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User is not authenticated');
+    }
 
-    const data = await this.usersService.getUsers(limit, offset, user);
-    const totalUsers = await this.usersService.getTotalUsers();
+    const offset = (page - 1) * limit;
 
-    return { data, totalUsers };
+    // 산하 회원과 총 회원 수 가져오기
+    const { users, totalUsers } =
+      await this.usersService.getUsersUnderMyNetwork(user.id, limit, offset);
+
+    return new GetUsersResponse(users, totalUsers);
   }
 
   @Mutation(() => String)
@@ -70,5 +76,41 @@ export class UsersResolver {
     }
 
     throw new UnauthorizedException('UsersResolver - Token Not Found');
+  }
+
+  @Mutation(() => String, { description: 'Update user details' })
+  async updateUser(
+    @Context() context: any,
+    @Args('userId') userId: string,
+    @Args('username', { nullable: true }) username?: string,
+    @Args('firstname', { nullable: true }) firstname?: string,
+    @Args('lastname', { nullable: true }) lastname?: string,
+    @Args('email', { nullable: true }) email?: string,
+    @Args('status', { nullable: true }) status?: string,
+    @Args('referrer', { nullable: true }) referrer?: string,
+    @Args('userLevel', { nullable: true, type: () => Int }) userLevel?: number,
+  ): Promise<string> {
+    const user = context.req.user;
+
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    // 어드민 권한 확인
+    const isAdmin = await this.usersService.isValidAdmin(user.id);
+    if (!isAdmin) {
+      throw new UnauthorizedException('Unauthorized: Admin access only');
+    }
+
+    // 사용자 데이터 업데이트
+    return this.usersService.updateUserDetails(userId, {
+      username,
+      firstname,
+      lastname,
+      email,
+      status,
+      referrer,
+      userLevel,
+    });
   }
 }

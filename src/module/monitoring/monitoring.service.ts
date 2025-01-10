@@ -7,6 +7,7 @@ import { Monitoring } from './monitoring.schema';
 import { Model } from 'mongoose';
 import { BscScanService } from './bscscan/bscscan.service';
 import { PackageUsersService } from '../package-users/package-users.service';
+import { TotalMiningService } from '../total-mining/total-mining.service';
 
 @Injectable()
 export class MonitoringService implements OnModuleInit {
@@ -18,6 +19,7 @@ export class MonitoringService implements OnModuleInit {
     private readonly monitoringModel: Model<Monitoring>,
     private readonly bscScanService: BscScanService, // BscScanService 주입
     private readonly packageUsersService: PackageUsersService,
+    private readonly totalMiningService: TotalMiningService,
   ) {}
 
   /**
@@ -121,6 +123,13 @@ export class MonitoringService implements OnModuleInit {
         this.logger.log('Executing mining monitoring task...');
         await this.packageUsersService.startMiningForPackage();
         //console.log('Executing mining monitoring task...');
+        break;
+
+      case 'crawler':
+        // 채굴 사이트 크롤링 관련 작업 로직
+        this.logger.log('Executing crawler monitoring task...');
+        await this.totalMiningService.handleCron();
+        //console.log('Executing masterWithdraw monitoring task...');
         break;
 
       case 'masterWithdaw':

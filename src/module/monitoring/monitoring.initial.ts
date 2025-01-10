@@ -15,7 +15,12 @@ export async function seedInitialMonitoring(
     {
       type: 'mining',
       isRunning: true,
-      interval: 60,
+      interval: 300,
+    },
+    {
+      type: 'crawler',
+      isRunning: true,
+      interval: 3600,
     },
     {
       type: 'masterWithdaw',

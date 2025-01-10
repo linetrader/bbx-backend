@@ -13,5 +13,6 @@ import { TotalMining, TotalMiningSchema } from './total-mining.schema';
     ]),
   ],
   providers: [TotalMiningResolver, TotalMiningService],
+  exports: [TotalMiningService],
 })
 export class TotalMiningModule {}

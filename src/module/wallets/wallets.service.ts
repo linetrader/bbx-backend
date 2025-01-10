@@ -154,25 +154,34 @@ export class WalletsService {
     limit: number,
     offset: number,
     user: { id: string },
-  ): Promise<WalletsAdmin[]> {
-    const requestingUser = await this.usersService.findUserById(user.id);
-    if (!requestingUser || requestingUser.userLevel > 3) {
+  ): Promise<{ data: WalletsAdmin[]; totalWallets: number }> {
+    // 1. 요청 사용자가 어드민인지 확인
+    const requestingUser = await this.usersService.isValidAdmin(user.id);
+    if (!requestingUser) {
       throw new BadRequestException(
         'Unauthorized: Access is restricted to admins only.',
       );
     }
 
+    // 2. 현재 사용자(user.id) 산하의 페이징된 userIds와 총 회원 수 가져오기
+    const userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
+
+    // 3. userIds를 기준으로 지갑 정보 검색
     const wallets = await this.walletModel
-      .find()
+      .find({ userId: { $in: userIds } })
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
       .exec();
 
-    return Promise.all(
+    // 4. 지갑 수량 계산
+    const totalWallets = await this.walletModel
+      .countDocuments({ userId: { $in: userIds } })
+      .exec();
+
+    // 5. 지갑 데이터를 WalletsAdmin 형식으로 변환
+    const data = await Promise.all(
       wallets.map(async (wallet) => {
-        //console.log('getWalletsAdmin - wallet.userId:', wallet.userId);
-        //console.log('getWalletsAdmin - wallet.id:', wallet.id);
         const username = await this.usersService.getUserName(wallet.userId);
         return {
           id: wallet.id,
@@ -185,10 +194,8 @@ export class WalletsService {
         };
       }),
     );
-  }
 
-  // 총 지갑 수 반환
-  async getTotalWallets(): Promise<number> {
-    return this.walletModel.countDocuments().exec(); // 지갑 수 카운트
+    // 5. 반환
+    return { data, totalWallets: totalWallets };
   }
 }

@@ -9,6 +9,7 @@ import { PackageModule } from '../package/package.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import MiningLogsModule
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import 
     PackageModule,
     ContractsModule,
     MiningLogsModule,
+    UsersModule,
   ],
   providers: [PackageUsersResolver, PackageUsersService],
   exports: [PackageUsersService], // MongooseModule을 exports에 추가

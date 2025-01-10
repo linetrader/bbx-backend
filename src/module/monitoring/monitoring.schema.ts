@@ -12,7 +12,7 @@ export class Monitoring extends Document {
 
   @Prop({ required: true })
   @Field()
-  type!: string; // "deposit" or "mining" or "masterWithdaw"
+  type!: string; // "deposit" or "mining" or "crawler" or "masterWithdaw"
 
   @Prop({ required: true, type: Boolean, default: false })
   @Field()

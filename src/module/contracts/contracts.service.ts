@@ -44,9 +44,9 @@ export class ContractsService implements OnModuleInit {
     offset: number,
     user: { id: string },
   ): Promise<GetPendingContractsResponse[]> {
-    const requestingUser = await this.usersService.findUserById(user.id);
+    const requestingUser = await this.usersService.isValidAdmin(user.id);
 
-    if (!requestingUser || requestingUser.userLevel > 3) {
+    if (!requestingUser) {
       throw new BadRequestException(
         'Unauthorized: Access is restricted to admins only.',
       );

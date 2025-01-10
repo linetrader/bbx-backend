@@ -4,7 +4,6 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -18,7 +17,7 @@ import { PackageUsersService } from '../package-users/package-users.service';
 import { GetPendingWithdrawalsResponse } from './dto/get-pending-withdrawals-response.dto';
 
 @Injectable()
-export class WithdrawListService implements OnModuleInit {
+export class WithdrawListService {
   constructor(
     @InjectModel(WithdrawList.name)
     private readonly withdrawListModel: Model<WithdrawList>,
@@ -33,18 +32,15 @@ export class WithdrawListService implements OnModuleInit {
   /**
    * 모듈 초기화 시 호출
    */
-  async onModuleInit() {
-    console.log('WithdrawListService - onModuleInit');
-  }
 
   async getPendingWithdrawalsAdmin(
     limit: number,
     offset: number,
     user: { id: string },
   ): Promise<GetPendingWithdrawalsResponse[]> {
-    const requestingUser = await this.usersService.findUserById(user.id);
+    const requestingUser = await this.usersService.isValidAdmin(user.id);
 
-    if (!requestingUser || requestingUser.userLevel > 3) {
+    if (!requestingUser) {
       throw new BadRequestException(
         'Unauthorized: Access is restricted to admins only.',
       );

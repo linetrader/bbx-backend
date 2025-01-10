@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { JwtService } from '@nestjs/jwt';
+//import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
@@ -18,7 +18,7 @@ export class GoogleOTPService {
   constructor(
     @InjectModel(GoogleOTP.name)
     private readonly googleOTPModel: Model<GoogleOTP>,
-    private readonly jwtService: JwtService,
+    //private readonly jwtService: JwtService,
   ) {}
 
   async getOtpInfo(user: { email: string }): Promise<GoogleOTP | null> {

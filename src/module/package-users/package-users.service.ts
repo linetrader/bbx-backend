@@ -10,7 +10,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PackageUsers } from './package-users.schema';
 import { Package } from '../package/package.schema';
-//import { JwtService } from '@nestjs/jwt';
 import { ContractsService } from '../contracts/contracts.service';
 import { MiningLogsService } from '../mining-logs/mining-logs.service'; // Import MiningLogsService
 import { WalletsService } from '../wallets/wallets.service';
@@ -230,14 +229,6 @@ export class PackageUsersService implements OnModuleInit {
     });
   }
 
-  private async deductWalletBalance(
-    wallet: Wallet,
-    totalPrice: number,
-  ): Promise<void> {
-    wallet.usdtBalance -= totalPrice;
-    await wallet.save();
-  }
-
   async purchasePackage(
     user: { id: string }, // 인증된 사용자 정보
     packageId: string,
@@ -267,7 +258,8 @@ export class PackageUsersService implements OnModuleInit {
       const totalPrice = selectedPackage.price * quantity;
 
       // 4. 지갑 잔액 차감
-      await this.deductWalletBalance(myWallet, totalPrice);
+      myWallet.usdtBalance -= totalPrice;
+      await myWallet.save();
 
       // 5. 계약서 생성
       const contractCreated = await this.createContract(

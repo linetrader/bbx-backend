@@ -23,6 +23,11 @@ export async function seedInitialMonitoring(
       interval: 3600,
     },
     {
+      type: 'coinPrice',
+      isRunning: true,
+      interval: 60,
+    },
+    {
       type: 'masterWithdaw',
       isRunning: true,
       interval: 60,

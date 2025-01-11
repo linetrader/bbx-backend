@@ -181,6 +181,15 @@ type GetPendingContractsPaginatedResponse {
   totalContracts: Int!
 }
 
+type CoinPrice {
+  id: ID!
+  language: String!
+  coinName: String!
+  price: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Query {
   getUserInfo: User!
 
@@ -204,6 +213,7 @@ type Query {
   getPackageRecords(status: String! = "approved"): [Contract!]!
   getPendingWithdrawalsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingWithdrawalsPaginatedResponse!
   getPendingWithdrawals: [WithdrawList!]!
+  getCoinPrice(coinName: String!, language: String!): CoinPrice
 }
 
 type Mutation {

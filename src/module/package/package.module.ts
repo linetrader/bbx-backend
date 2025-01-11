@@ -15,6 +15,6 @@ import { UsersModule } from '../users/users.module';
     UsersModule, // UsersModule 가져오기
   ],
   providers: [PackageResolver, PackageService],
-  exports: [PackageService], // MongooseModule 내보내기 추가
+  exports: [PackageService],
 })
 export class PackageModule {}

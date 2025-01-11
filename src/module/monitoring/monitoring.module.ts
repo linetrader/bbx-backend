@@ -9,6 +9,7 @@ import { BscScanModule } from './bscscan/bscscan.module';
 import { WalletsModule } from '../wallets/wallets.module'; // WalletsModule 가져오기
 import { PackageUsersModule } from '../package-users/package-users.module';
 import { TotalMiningModule } from '../total-mining/total-mining.module';
+import { CoinPriceModule } from '../coin-price/coin-price.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TotalMiningModule } from '../total-mining/total-mining.module';
     WalletsModule,
     PackageUsersModule,
     TotalMiningModule,
+    CoinPriceModule,
   ],
   providers: [MonitoringResolver, MonitoringService],
 })

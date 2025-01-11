@@ -106,6 +106,8 @@ export class WalletsService {
       throw new UnauthorizedException('User is not authenticated');
     }
 
+    //console.log('getWalletInfo - ', user.id);
+
     const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
 
     if (!wallet) {

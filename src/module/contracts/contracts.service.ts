@@ -30,6 +30,23 @@ export class ContractsService implements OnModuleInit {
     await this.updateMissingStatusFields();
   }
 
+  async confirmContract(contractId: string): Promise<boolean> {
+    // 2. 계약서 가져오기.
+    const contractUser = await this.contractModel.findById(contractId).exec();
+    if (!contractUser) {
+      //throw new BadRequestException('계약서가 없습니다.');
+      return false;
+    }
+
+    // 3. 계약 상태 승인으로 바꾸고 저장.
+    contractUser.status = 'approved';
+    contractUser.save();
+
+    // 4. 유저의 밸런스 업데이트.
+
+    return true;
+  }
+
   async getDefaultContract(): Promise<DefaultContract> {
     const defaultContract = await this.defaultContractModel.findOne().exec();
     if (!defaultContract) {
@@ -54,7 +71,7 @@ export class ContractsService implements OnModuleInit {
 
     const contracts = await this.contractModel
       .find({ status: 'pending' })
-      .sort({ createdAt: -1 }) // 최신순 정렬
+      .sort({ createdAt: 1 }) // 최신순 정렬
       .skip(offset)
       .limit(limit)
       .exec();

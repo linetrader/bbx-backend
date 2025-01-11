@@ -61,4 +61,22 @@ export class PackageUsersResolver {
       customerAddress,
     );
   }
+
+  @Mutation(() => Boolean)
+  async confirmContract(
+    @Args('contractId', { type: () => String }) contractId: string,
+    @Args('username', { type: () => String }) username: string,
+    @Args('packageName', { type: () => String }) packageName: string,
+    @Args('quantity', { type: () => Int }) quantity: number,
+    @Context() context: any,
+  ): Promise<boolean> {
+    const user = context.req.user;
+    return await this.packageUsersService.confirmPackage(
+      contractId,
+      username,
+      packageName,
+      quantity,
+      user.id,
+    );
+  }
 }

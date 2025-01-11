@@ -79,9 +79,7 @@ export class CoinPriceService {
   async getCoinPrice(
     coinName: string,
     language: string,
-    userId: string,
   ): Promise<CoinPrice | null> {
-    console.log('getCoinPrice - ', userId);
     return this.coinPriceModel
       .findOne({ coinName, language })
       .sort({ createdAt: -1 });

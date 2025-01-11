@@ -34,6 +34,19 @@ export class PackageService implements OnModuleInit {
     return selectedPackage;
   }
 
+  // 패키지 마이닝 수량 저장하기
+  async savePacakeMiningProfit(
+    name: string,
+    miningProfit: number,
+  ): Promise<boolean> {
+    const selectedPackage = await this.packageModel.findOne({ name }).exec();
+    if (selectedPackage) {
+      selectedPackage.miningProfit = miningProfit;
+      selectedPackage.save();
+    }
+    return false;
+  }
+
   // 패키지 목록 가져오기
   async getPackages(user: { id: string }): Promise<Package[]> {
     //console.log('getPackages - ', user.id);

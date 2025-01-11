@@ -45,9 +45,9 @@ export class WalletsService {
   }
 
   async findWalletById(userId: string) {
-    console.log('findWalletById - userId', userId);
+    //console.log('findWalletById - userId', userId);
     const wallet = await this.walletModel.findOne({ userId }).exec();
-    console.log('findWalletById - wallet', wallet);
+    //console.log('findWalletById - wallet', wallet);
     return wallet;
   }
 
@@ -99,6 +99,15 @@ export class WalletsService {
       console.error('[ERROR] saveWithdrawAddress failed:', error);
       throw error; // Re-throw the error to ensure it propagates correctly
     }
+  }
+
+  async findWalletIdByUserId(userId: string): Promise<string> {
+    const wallet = await this.walletModel.findOne({ userId }).exec();
+    if (!wallet) {
+      return '';
+    }
+
+    return wallet.id;
   }
 
   async getWalletInfo(user: { id: string }): Promise<Wallet> {
@@ -199,5 +208,48 @@ export class WalletsService {
 
     // 5. 반환
     return { data, totalWallets: totalWallets };
+  }
+
+  /**
+   * Update wallet details service method
+   */
+  async updateWalletDetails(
+    userId: string, // 사용자 ID
+    walletId: string,
+    updates: Partial<Wallet>,
+  ): Promise<string> {
+    try {
+      // 어드민 권한 확인
+      const isAdmin = await this.usersService.isValidAdmin(userId);
+      if (!isAdmin) {
+        throw new UnauthorizedException('Unauthorized: Admin access only');
+      }
+
+      // 월렛 검색
+      const wallet = await this.walletModel.findById(walletId).exec();
+      if (!wallet) {
+        throw new BadRequestException('Wallet not found');
+      }
+
+      // 업데이트 가능한 필드 정의
+      const fieldsToUpdate: Array<keyof Wallet> = [
+        'whithdrawAddress',
+        'usdtBalance',
+      ];
+
+      // 필드 업데이트 로직
+      for (const field of fieldsToUpdate) {
+        const value = updates[field];
+        if (value !== undefined && value !== null) {
+          (wallet[field] as any) = value; // 타입 강제 캐스팅
+        }
+      }
+
+      await wallet.save();
+      return `Wallet ${walletId} updated successfully`;
+    } catch (error) {
+      console.error('[ERROR] Failed to update wallet details:', error);
+      throw new BadRequestException('Failed to update wallet details');
+    }
   }
 }

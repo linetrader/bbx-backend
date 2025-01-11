@@ -117,9 +117,12 @@ export class PackageUsersService implements OnModuleInit {
   /**
    * 저장된 패키지 데이터를 기반으로 마이닝 실행
    */
-  async startMiningForPackage(): Promise<void> {
+  async startMiningForPackage(miningInterval: number): Promise<void> {
     for (const packageName in this.packageData) {
       const { name, miningProfit, logInterval } = this.packageData[packageName];
+
+      // 24시간 채굴량을 초 단위로 나누고, 해당 interval 동안의 채굴량 계산
+      const nowProfit = (miningProfit / (24 * 60 * 60)) * miningInterval;
 
       const packageUsers = await this.packageUsersModel
         .find({ packageType: name })
@@ -127,7 +130,9 @@ export class PackageUsersService implements OnModuleInit {
 
       for (const packageUser of packageUsers) {
         try {
-          const totalProfit = miningProfit * packageUser.quantity;
+          const totalProfit = parseFloat(
+            (nowProfit * packageUser.quantity).toFixed(6),
+          );
 
           packageUser.miningBalance += totalProfit;
           await packageUser.save();
@@ -183,11 +188,16 @@ export class PackageUsersService implements OnModuleInit {
   }
 
   private async updateUserPackage(
-    userId: string,
+    username: string,
     packageName: string,
-    walletId: string,
     quantity: number,
   ): Promise<void> {
+    // 1. 유저 id 찾기
+    const userId = await this.usersService.findUserIdByUsername(username);
+
+    // 2. 월렛 id 찾기
+    const walletId = await this.walletsService.findWalletIdByUserId(userId);
+
     const userPackage = await this.packageUsersModel.findOne({
       userId,
       packageType: packageName,
@@ -206,6 +216,36 @@ export class PackageUsersService implements OnModuleInit {
       });
       await newUserPackage.save();
     }
+  }
+
+  async confirmPackage(
+    contractId: string,
+    username: string,
+    packageName: string,
+    quantity: number,
+    userId: string,
+  ): Promise<boolean> {
+    // 1. 요청 사용자가 어드민인지 확인
+    const requestingUser = await this.usersService.isValidAdmin(userId);
+    if (!requestingUser) {
+      throw new BadRequestException(
+        'Unauthorized: Access is restricted to admins only.',
+      );
+    }
+
+    // 1. 계약서 승인 상태 저장.
+    const isContract = this.contractsService.confirmContract(contractId);
+    if (!isContract) {
+      throw new BadRequestException('계약서가 없습니다.');
+    }
+
+    // 2. 업데이트 패키지.
+    const isUpdate = this.updateUserPackage(username, packageName, quantity);
+    if (!isUpdate) {
+      return false;
+    }
+
+    return true;
   }
 
   private async createContract(

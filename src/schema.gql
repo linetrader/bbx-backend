@@ -224,10 +224,14 @@ type Mutation {
   updateUser(userId: String!, username: String, firstname: String, lastname: String, email: String, status: String, referrer: String, userLevel: Int): String!
   createWallet: Wallet!
   saveWithdrawAddress(newAddress: String!, otp: String!): Boolean!
+
+  """Update wallet details"""
+  updateWallet(walletId: String!, whithdrawAddress: String, usdtBalance: Int): String!
   generateOTP: GenerateOtpOutput!
   verifyAndSaveOTP(otp: String!): Boolean!
   verifyOnlyOTP(otp: String!): Boolean!
   purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
+  confirmContract(contractId: String!, username: String!, packageName: String!, quantity: Int!): Boolean!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!
   rejectWithdrawal(withdrawalId: String!, remarks: String): Boolean!

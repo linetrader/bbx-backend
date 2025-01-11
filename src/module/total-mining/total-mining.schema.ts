@@ -20,7 +20,11 @@ export class TotalMining extends Document {
 
   @Prop({ required: true })
   @Field()
-  miningProfit!: number; // 상품 1개당 나오는 코인 수량
+  miningProfit!: number; // 합산 마이닝 수량
+
+  @Prop({ required: true })
+  @Field()
+  todayMiningProfit!: number; // 금일 마이닝 수량
 
   @Field(() => String)
   createdAt!: Date;

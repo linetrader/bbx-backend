@@ -23,7 +23,7 @@ export class UsersService implements OnModuleInit {
     //console.log('Starting mining process for active packages...');
     //await this.initialMiningForAllPackages();
     //this.startMiningForPackage();
-    await this.initializeReferrerField();
+    //await this.initializeReferrerField();
   }
 
   async initializeReferrerField(): Promise<void> {
@@ -72,6 +72,15 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
+  async findUserIdByUsername(username: string): Promise<string> {
+    const user = await this.userModel.findOne({ username }).exec();
+    if (!user) {
+      return '';
+    }
+
+    return user.id;
+  }
+
   async findUserById(userId: string): Promise<User | null> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
@@ -109,11 +118,13 @@ export class UsersService implements OnModuleInit {
   }
 
   async getUserInfo(user: { id: string }): Promise<User | null> {
+    console.log('getUserInfo - ', user.id);
     if (!user || !user.id) {
       throw new UnauthorizedException('User not authenticated.');
     }
 
     const userInfo = await this.findUserById(user.id);
+    //console.log('getUserInfo - ', userInfo);
     if (!userInfo) {
       throw new BadRequestException('User not found.');
     }

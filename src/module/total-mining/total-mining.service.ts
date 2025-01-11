@@ -1,6 +1,6 @@
 // module/total-mining/total-mining.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 //import { Cron } from '@nestjs/schedule';
 //import { ConfigService } from '@nestjs/config';
@@ -8,9 +8,11 @@ import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 import { Model } from 'mongoose';
 import { TotalMining } from './total-mining.schema';
+import { PackageService } from '../package/package.service';
+import { CoinPriceService } from '../coin-price/coin-price.service';
 
 @Injectable()
-export class TotalMiningService {
+export class TotalMiningService implements OnModuleInit {
   private readonly logger = new Logger(TotalMiningService.name);
   private readonly axiosInstance: AxiosInstance;
   private cookies: string | null = null; // 쿠키 저장 변수
@@ -18,6 +20,8 @@ export class TotalMiningService {
   constructor(
     @InjectModel(TotalMining.name)
     private readonly totalMiningModel: Model<TotalMining>,
+    private readonly packageService: PackageService,
+    private readonly coinPriceService: CoinPriceService,
     //private readonly configService: ConfigService, // ConfigService 주입
   ) {
     //const cronExpression = this.configService.get<string>('CRON_EXPRESSION');
@@ -30,6 +34,61 @@ export class TotalMiningService {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
       },
     });
+  }
+
+  async onModuleInit() {
+    await this.initializeTodayMiningProfit('BTC');
+  }
+
+  /**
+   * 기존 데이터 중 todayMiningProfit이 없는 항목을 업데이트
+   * @param miningType 마이닝 타입 (예: BTC, ETH 등)
+   */
+  async initializeTodayMiningProfit(miningType: string): Promise<void> {
+    try {
+      // todayMiningProfit이 없는 기존 데이터를 조회
+      const recordsWithoutTodayProfit = await this.totalMiningModel
+        .find({ miningType, todayMiningProfit: { $exists: false } }) // todayMiningProfit 필드가 없는 항목 필터링
+        .sort({ createdAt: 1 }) // 오래된 순으로 정렬
+        .exec();
+
+      if (recordsWithoutTodayProfit.length === 0) {
+        this.logger.log(`No records to update for miningType: ${miningType}`);
+        return;
+      }
+
+      this.logger.log(
+        `Found ${recordsWithoutTodayProfit.length} records to update for miningType: ${miningType}`,
+      );
+
+      // 이전 레코드의 miningProfit을 저장할 변수
+      let previousMiningProfit = 0;
+
+      for (const record of recordsWithoutTodayProfit) {
+        const todayMiningProfit = parseFloat(
+          (record.miningProfit - previousMiningProfit).toFixed(6),
+        );
+
+        // todayMiningProfit 업데이트
+        await this.totalMiningModel.updateOne(
+          { _id: record._id },
+          { $set: { todayMiningProfit } },
+        );
+
+        this.logger.log(
+          `Updated record ${record._id}: todayMiningProfit = ${todayMiningProfit}`,
+        );
+
+        // 현재 레코드의 miningProfit 값을 이전 값으로 저장
+        previousMiningProfit = record.miningProfit;
+      }
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(
+        `Failed to update today's mining profit: ${err.message}`,
+      );
+      throw error;
+    }
   }
 
   // 매 분마다 실행되는 작업
@@ -61,8 +120,14 @@ export class TotalMiningService {
         return;
       }
 
-      // 변화가 있으면 새로운 다큐먼트 저장
-      await this.saveMiningData(quantity, miningProfit);
+      if (lastMiningRecord) {
+        const todayMiningProfit = parseFloat(
+          (miningProfit - lastMiningRecord.miningProfit).toFixed(6),
+        );
+
+        // 변화가 있으면 새로운 다큐먼트 저장
+        await this.saveMiningData(quantity, miningProfit, todayMiningProfit);
+      }
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Error in scheduled task: ${err.message}`);
@@ -75,16 +140,44 @@ export class TotalMiningService {
   private async saveMiningData(
     quantity: number,
     miningProfit: number,
+    todayMiningProfit: number,
   ): Promise<void> {
     try {
       const newMiningData = new this.totalMiningModel({
         miningType: 'BTC',
         miningQuantity: quantity,
         miningProfit,
+        todayMiningProfit,
       });
 
       const result = await newMiningData.save();
       this.logger.log(`Mining data saved to DB: ${JSON.stringify(result)}`);
+
+      // 1개당 BTC 마이닝 수량 계산해서 DB 저장
+      const lastMiningProfit = parseFloat(
+        (todayMiningProfit / quantity).toFixed(6),
+      );
+      this.packageService.savePacakeMiningProfit('BTC', lastMiningProfit);
+
+      // BTC랑 DOGE 가격을 가져온다.
+      const btcPrice = await this.coinPriceService.getCoinPrice('BTC', 'en');
+      const dogePrice = await this.coinPriceService.getCoinPrice('DOGE', 'en');
+
+      if (!btcPrice || !dogePrice) {
+        throw new Error('Failed to fetch BTC or DOGE price.');
+      }
+
+      // DOGE 마이닝 수량 계산
+      const dogeMiningProfit = parseFloat(
+        ((lastMiningProfit * btcPrice.price) / dogePrice.price).toFixed(6),
+      );
+
+      // DOGE 마이닝 수량 DB 저장
+      await this.packageService.savePacakeMiningProfit(
+        'DOGE',
+        dogeMiningProfit,
+      );
+      this.logger.log(`DOGE mining profit saved: ${dogeMiningProfit}`);
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to save mining data: ${err.message}`);

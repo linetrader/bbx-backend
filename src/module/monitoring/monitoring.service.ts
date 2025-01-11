@@ -123,7 +123,12 @@ export class MonitoringService implements OnModuleInit {
       case 'mining':
         // 마이닝 관련 작업 로직
         this.logger.log('Executing mining monitoring task...');
-        await this.packageUsersService.startMiningForPackage();
+        const process = await this.monitoringModel.findOne({ type }).exec();
+        if (process) {
+          await this.packageUsersService.startMiningForPackage(
+            process.interval,
+          );
+        }
         //console.log('Executing mining monitoring task...');
         break;
 

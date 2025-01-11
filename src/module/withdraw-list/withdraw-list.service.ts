@@ -48,7 +48,7 @@ export class WithdrawListService {
 
     const withdrawals = await this.withdrawListModel
       .find({ status: 'pending' }) // "pending" 상태의 데이터 필터링
-      .sort({ createdAt: -1 }) // 최신순 정렬
+      .sort({ createdAt: 1 }) // 최신순 정렬
       .skip(offset)
       .limit(limit)
       .exec();

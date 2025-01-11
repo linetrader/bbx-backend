@@ -2,7 +2,7 @@
 
 import { Resolver, Mutation, Query, Context, Args, Int } from '@nestjs/graphql';
 import { WalletsService } from './wallets.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { Wallet } from './wallets.schema';
 import { GetAdminWalletsResponse } from './dto/get-wallets-response.dto'; // 응답 DTO 정의
 
@@ -67,5 +67,27 @@ export class WalletsResolver {
     }
 
     return this.walletsService.saveWithdrawAddress(user, newAddress, otp);
+  }
+
+  @Mutation(() => String, { description: 'Update wallet details' })
+  async updateWallet(
+    @Context() context: any,
+    @Args('walletId') walletId: string,
+    @Args('whithdrawAddress', { nullable: true }) whithdrawAddress?: string,
+    @Args('usdtBalance', { nullable: true, type: () => Int })
+    usdtBalance?: number,
+  ): Promise<string> {
+    const user = context.req.user;
+
+    // 인증된 사용자 확인
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    // 월렛 업데이트
+    return this.walletsService.updateWalletDetails(user.id, walletId, {
+      whithdrawAddress,
+      usdtBalance,
+    });
   }
 }

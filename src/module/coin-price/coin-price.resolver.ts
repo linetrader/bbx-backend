@@ -19,6 +19,6 @@ export class CoinPriceResolver {
       throw new UnauthorizedException('User not authenticated.');
     }
 
-    return this.coinPriceService.getCoinPrice(coinName, language, user.id);
+    return this.coinPriceService.getCoinPrice(coinName, language);
   }
 }

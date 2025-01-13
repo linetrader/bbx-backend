@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BscScanService } from './bscscan.service';
-import { Wallet, WalletSchema } from '../../wallets/wallets.schema';
-import { TransactionModule } from '../../transaction/transaction.module';
+import { Wallet, WalletSchema } from '../wallets/wallets.schema';
+import { TransactionModule } from '../transaction/transaction.module';
+import { TokenTransferModule } from '../token-transfer/token-transfer.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Wallet.name, schema: WalletSchema }]),
     TransactionModule,
+    TokenTransferModule,
   ],
 
   providers: [BscScanService],

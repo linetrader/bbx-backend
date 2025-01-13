@@ -5,6 +5,7 @@
     "typeRoots": ["./node_modules/@types", "./src/types"], // 사용자 정의 타입 경로 추가
     "types": ["node"], // 기존 타입과 함께 사용
     "moduleResolution": "node",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
@@ -13,6 +14,7 @@
     "strictNullChecks": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true, // 파일 대소문자 일관성 검사
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {

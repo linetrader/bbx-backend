@@ -17,6 +17,7 @@ import { Wallet } from '../wallets/wallets.schema';
 import { PackageService } from '../package/package.service';
 import { GetMiningCustomerResponse } from './dto/package-users.dto';
 import { UsersService } from '../users/users.service';
+import { TokenTransferService } from '../token-transfer/token-transfer.service';
 
 //interface minitData
 
@@ -36,6 +37,7 @@ export class PackageUsersService implements OnModuleInit {
     private readonly contractsService: ContractsService,
     private readonly miningLogsService: MiningLogsService,
     private readonly usersService: UsersService,
+    private readonly tokenTransferService: TokenTransferService,
   ) {}
 
   async onModuleInit() {
@@ -188,12 +190,12 @@ export class PackageUsersService implements OnModuleInit {
   }
 
   private async updateUserPackage(
-    username: string,
+    userId: string,
     packageName: string,
     quantity: number,
   ): Promise<void> {
     // 1. 유저 id 찾기
-    const userId = await this.usersService.findUserIdByUsername(username);
+    //const userId = await this.usersService.findUserIdByUsername(username);
 
     // 2. 월렛 id 찾기
     const walletId = await this.walletsService.findWalletIdByUserId(userId);
@@ -233,19 +235,40 @@ export class PackageUsersService implements OnModuleInit {
       );
     }
 
-    // 1. 계약서 승인 상태 저장.
-    const isContract = this.contractsService.confirmContract(contractId);
-    if (!isContract) {
-      throw new BadRequestException('계약서가 없습니다.');
-    }
-
-    // 2. 업데이트 패키지.
-    const isUpdate = this.updateUserPackage(username, packageName, quantity);
-    if (!isUpdate) {
+    const findUserId = await this.usersService.findUserIdByUsername(username);
+    if (!findUserId) {
       return false;
     }
 
-    return true;
+    // 1. 유저 지갑에서 테더 회사 지갑으로 전송
+    const packagePrice = await this.packageService.getPackagePrice(packageName);
+    const totalPrice = packagePrice * quantity;
+    const resTrans = await this.tokenTransferService.transferUsdt(
+      findUserId,
+      totalPrice,
+    );
+
+    if (resTrans) {
+      // 2. 계약서 승인 상태 저장.
+      const isContract = this.contractsService.confirmContract(contractId);
+      if (!isContract) {
+        throw new BadRequestException('계약서가 없습니다.');
+      }
+
+      // 3. 업데이트 패키지.
+      const isUpdate = this.updateUserPackage(
+        findUserId,
+        packageName,
+        quantity,
+      );
+      if (!isUpdate) {
+        return false;
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   private async createContract(

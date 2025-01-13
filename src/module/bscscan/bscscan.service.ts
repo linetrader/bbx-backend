@@ -5,8 +5,9 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
-import { TransactionService } from '../../transaction/transaction.service';
-import { Wallet } from '../../wallets/wallets.schema';
+import { TransactionService } from '../transaction/transaction.service';
+import { Wallet } from '../wallets/wallets.schema';
+import { TokenTransferService } from '../token-transfer/token-transfer.service';
 
 @Injectable()
 export class BscScanService {
@@ -15,27 +16,15 @@ export class BscScanService {
   private readonly bscScanApiKey: string;
 
   constructor(
-    private readonly configService: ConfigService,
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet>, // walletModel 정의
+    private readonly configService: ConfigService,
     private readonly transactionService: TransactionService, // transactionService 정의
+    private readonly tokenTransferService: TokenTransferService,
   ) {
-    const bscEnv = this.configService.get<string>('BSC_ENV', 'testnet'); // 기본값은 mainnet
-
-    if (bscEnv === 'testnet') {
-      this.bscScanApiUrl =
-        this.configService.get<string>('BSC_TESTNET_API_URL') || '';
-      this.bscUsdtContractAddress =
-        this.configService.get<string>('BSC_TESTNET_USDT_CONTRACT_ADDRESS') ||
-        '';
-    } else {
-      this.bscScanApiUrl =
-        this.configService.get<string>('BSC_MAINNET_API_URL') || '';
-      this.bscUsdtContractAddress =
-        this.configService.get<string>('BSC_MAINNET_USDT_CONTRACT_ADDRESS') ||
-        '';
-    }
-
+    this.bscScanApiUrl = this.configService.get<string>('BSC_API_URL') || '';
+    this.bscUsdtContractAddress =
+      this.configService.get<string>('BSC_USDT_CONTRACT_ADDRESS') || '';
     this.bscScanApiKey =
       this.configService.get<string>('BSC_SCAN_API_KEY') || '';
   }
@@ -118,12 +107,44 @@ export class BscScanService {
           continue;
         }
 
+        // 3. BNB 잔액 체크
+        const bnbBalance = await this.tokenTransferService.getBnbBalance(
+          wallet.address,
+        );
+        console.log(
+          `[INFO] Wallet ${wallet.address} BNB Balance: ${bnbBalance}`,
+        );
+
+        // 4. BNB 잔액이 0.0002 이하인 경우 회사 지갑에서 BNB 0.001 송금
+        if (bnbBalance <= 0.0002) {
+          console.log(
+            `[INFO] Wallet ${wallet.address} has low BNB balance. Sending 0.001 BNB.`,
+          );
+          const success = await this.tokenTransferService.transferBnb(
+            wallet.address,
+            0.001,
+          );
+          if (success) {
+            console.log(`[INFO] Sent 0.001 BNB to wallet ${wallet.address}`);
+          } else {
+            console.error(
+              `[ERROR] Failed to send 0.001 BNB to wallet ${wallet.address}`,
+            );
+          }
+        } else {
+          console.log('[INFO] wallet.bnbBalance', wallet.bnbBalance);
+          console.log('[INFO] bnbBalance', bnbBalance);
+          if (wallet.bnbBalance != bnbBalance) {
+            wallet.bnbBalance = bnbBalance;
+          }
+        }
+
         // 3. 새로운 트랜잭션 처리 및 DB 업데이트
         const amountDeposited = balance;
         const totalBalance = wallet.usdtBalance + amountDeposited;
-        console.log('amountDeposited : ', amountDeposited);
-        console.log('wallet.usdtBalance : ', wallet.usdtBalance);
-        console.log('totalBalance : ', totalBalance);
+        //console.log('amountDeposited : ', amountDeposited);
+        //console.log('wallet.usdtBalance : ', wallet.usdtBalance);
+        //console.log('totalBalance : ', totalBalance);
 
         wallet.usdtBalance = totalBalance;
 

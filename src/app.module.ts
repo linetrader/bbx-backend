@@ -21,6 +21,7 @@ import { MonitoringModule } from './module/monitoring/monitoring.module';
 import { MiningLogsModule } from './module/mining-logs/mining-logs.module';
 import { TotalMiningModule } from './module/total-mining/total-mining.module';
 import { CoinPriceModule } from './module/coin-price/coin-price.module';
+import { TokenTransferModule } from './module/token-transfer/token-transfer.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { CoinPriceModule } from './module/coin-price/coin-price.module';
     MiningLogsModule,
     TotalMiningModule,
     CoinPriceModule,
+    TokenTransferModule,
   ],
 })
 export class AppModule implements NestModule {

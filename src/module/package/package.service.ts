@@ -34,6 +34,23 @@ export class PackageService implements OnModuleInit {
     return selectedPackage;
   }
 
+  async getPackagePrice(packageName: string): Promise<number> {
+    // 패키지 검색
+    const foundPackage = await this.packageModel
+      .findOne({ name: packageName })
+      .exec();
+
+    // 패키지가 없는 경우 에러 반환
+    if (!foundPackage) {
+      throw new BadRequestException(
+        `Package with name ${packageName} not found.`,
+      );
+    }
+
+    // 패키지의 price 반환
+    return foundPackage.price;
+  }
+
   // 패키지 마이닝 수량 저장하기
   async savePacakeMiningProfit(
     name: string,

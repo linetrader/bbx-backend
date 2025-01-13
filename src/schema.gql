@@ -30,6 +30,7 @@ type Wallet {
   address: String!
   whithdrawAddress: String!
   userId: String!
+  bnbBalance: Float!
   usdtBalance: Float!
   createdAt: String!
   updatedAt: String!
@@ -40,6 +41,7 @@ type WalletsAdmin {
   username: String!
   address: String!
   whithdrawAddress: String!
+  bnbBalance: Float!
   usdtBalance: Float!
   createdAt: String!
   updatedAt: String!

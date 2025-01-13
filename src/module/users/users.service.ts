@@ -118,7 +118,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async getUserInfo(user: { id: string }): Promise<User | null> {
-    console.log('getUserInfo - ', user.id);
+    //console.log('getUserInfo - ', user.id);
     if (!user || !user.id) {
       throw new UnauthorizedException('User not authenticated.');
     }

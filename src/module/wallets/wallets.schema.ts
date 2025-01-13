@@ -24,6 +24,10 @@ export class Wallet extends Document {
 
   @Prop({ required: true, type: Number, default: 0.0 })
   @Field()
+  bnbBalance!: number;
+
+  @Prop({ required: true, type: Number, default: 0.0 })
+  @Field()
   usdtBalance!: number;
 
   @Field(() => String)
@@ -48,6 +52,9 @@ export class WalletsAdmin {
 
   @Field()
   whithdrawAddress!: string;
+
+  @Field()
+  bnbBalance!: number;
 
   @Field()
   usdtBalance!: number;

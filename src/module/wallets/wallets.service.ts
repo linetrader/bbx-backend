@@ -5,6 +5,7 @@ import * as path from 'path';
 import {
   BadRequestException,
   Injectable,
+  OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -15,13 +16,39 @@ import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
 import { UsersService } from '../users/users.service';
 
 @Injectable()
-export class WalletsService {
+export class WalletsService implements OnModuleInit {
   constructor(
     @InjectModel(Wallet.name)
     private readonly walletModel: Model<Wallet & Document>,
     private readonly googleOtpService: GoogleOTPService,
     private readonly usersService: UsersService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      console.log('[INFO] Checking for wallets without bnbBalance field...');
+
+      // bnbBalance 필드가 없는 문서를 검색
+      const walletsToUpdate = await this.walletModel
+        .find({ bnbBalance: { $exists: false } })
+        .exec();
+
+      console.log(
+        `[INFO] Found ${walletsToUpdate.length} wallets without bnbBalance.`,
+      );
+
+      // 필드 추가 및 기본값 설정
+      for (const wallet of walletsToUpdate) {
+        wallet.bnbBalance = 0.0;
+        await wallet.save();
+        console.log(`[INFO] Updated wallet ID: ${wallet.id}`);
+      }
+
+      console.log('[INFO] Wallets updated successfully.');
+    } catch (error) {
+      console.error('[ERROR] Failed to update wallets:', error);
+    }
+  }
 
   private savePrivateKeyToFile(walletId: string, privateKey: string): void {
     try {
@@ -44,11 +71,28 @@ export class WalletsService {
     }
   }
 
-  async findWalletById(userId: string) {
-    //console.log('findWalletById - userId', userId);
-    const wallet = await this.walletModel.findOne({ userId }).exec();
-    //console.log('findWalletById - wallet', wallet);
-    return wallet;
+  async findWalletById(userId: string): Promise<Wallet | null> {
+    try {
+      //console.log('findWalletById - userId:', userId);
+      const wallet = await this.walletModel.findOne({ userId }).exec();
+      //console.log('findWalletById - wallet:', wallet);
+      return wallet;
+    } catch (error) {
+      console.error('Error in findWalletById:', error);
+      throw error;
+    }
+  }
+
+  async findWalletIdByAddress(address: string): Promise<string | null> {
+    try {
+      //console.log('findWalletById - userId:', userId);
+      const wallet = await this.walletModel.findOne({ address }).exec();
+      //console.log('findWalletById - wallet:', wallet);
+      return wallet?.id;
+    } catch (error) {
+      console.error('Error in findWalletById:', error);
+      throw error;
+    }
   }
 
   async saveWithdrawAddress(
@@ -150,7 +194,8 @@ export class WalletsService {
       address: wallet.address,
       whithdrawAddress: '0x', // 명시적으로 기본값 제공
       userId: user.id,
-      usdtBalance: 0,
+      bnbBalance: 0.0,
+      usdtBalance: 0.0,
     });
 
     //console.log('[DEBUG] Saving private key');
@@ -199,6 +244,7 @@ export class WalletsService {
           username: username || 'Unknown',
           address: wallet.address,
           whithdrawAddress: wallet.whithdrawAddress || '',
+          bnbBalance: wallet.bnbBalance || 0.0,
           usdtBalance: wallet.usdtBalance || 0.0,
           createdAt: wallet.createdAt,
           updatedAt: wallet.updatedAt,

@@ -5,7 +5,7 @@ import { seedInitialMonitoring } from './monitoring.initial';
 import { InjectModel } from '@nestjs/mongoose/dist';
 import { Monitoring } from './monitoring.schema';
 import { Model } from 'mongoose';
-import { BscScanService } from './bscscan/bscscan.service';
+import { BscScanService } from '../bscscan/bscscan.service';
 import { PackageUsersService } from '../package-users/package-users.service';
 import { TotalMiningService } from '../total-mining/total-mining.service';
 import { CoinPriceService } from '../coin-price/coin-price.service';

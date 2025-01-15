@@ -81,6 +81,15 @@ export class UsersService implements OnModuleInit {
     return false;
   }
 
+  // async getUserNameById(userId: string): Promise<string> {
+  //   const user = await this.userModel.findById(userId).exec();
+  //   if (!user) {
+  //     return '';
+  //   }
+
+  //   return user.username;
+  // }
+
   async findUserByEmail(email: string): Promise<User | null> {
     const user = await this.userModel.findOne({ email }).exec();
     if (!user) {

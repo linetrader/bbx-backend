@@ -10,9 +10,13 @@ export class ReferrerLog extends Document {
   @Field(() => ID)
   id!: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   @Field() // GraphQL 필드로 노출
   userName!: string;
+
+  @Prop({ required: true, index: true })
+  @Field() // GraphQL 필드로 노출
+  referrerUserName!: string;
 
   @Prop({ required: true })
   @Field() // GraphQL 필드로 노출

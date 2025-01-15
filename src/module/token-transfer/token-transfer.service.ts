@@ -1,12 +1,9 @@
 import { ethers } from 'ethers';
-
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import privateKeysJson from '../../../privateKey.json'; // JSON 파일 읽기
+import { readFileSync } from 'fs'; // 파일 읽기 모듈
+import { resolve } from 'path'; // 경로 모듈
 import { WalletsService } from '../wallets/wallets.service';
-
-// JSON 파일의 타입 정의
-const privateKeys: Record<string, string> = privateKeysJson;
 
 @Injectable()
 export class TokenTransferService {
@@ -14,6 +11,7 @@ export class TokenTransferService {
   private readonly companyUsdtWalletAddress: string;
   private readonly companyBnbWalletAddress: string;
   private readonly bscUsdtContractAddress: string;
+  private readonly privateKeyFilePath: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -28,39 +26,46 @@ export class TokenTransferService {
       this.configService.get<string>('COMPANY_BNB_WALLET_ADDRESS') || '';
     this.bscUsdtContractAddress =
       this.configService.get<string>('BSC_USDT_CONTRACT_ADDRESS') || '';
+    this.privateKeyFilePath = resolve(__dirname, '../../../privateKey.json'); // JSON 파일 경로
+  }
+
+  // JSON 파일 동적 로드
+  private loadPrivateKeys(): Record<string, string> {
+    try {
+      const fileContent = readFileSync(this.privateKeyFilePath, 'utf8');
+      return JSON.parse(fileContent);
+    } catch (error) {
+      console.error('[ERROR] Failed to load privateKey.json:', error);
+      throw new BadRequestException('Failed to load private keys.');
+    }
   }
 
   async transferUsdt(userId: string, totalPrice: number): Promise<boolean> {
     const wallet = await this.walletsService.findWalletById(userId);
 
     if (!wallet) {
-      //throw new BadRequestException('Wallet not found for the given user ID.');
+      console.log('Wallet not found for the given user ID.');
       return false;
     }
 
     const walletId = wallet.id;
+    const privateKeys = this.loadPrivateKeys(); // 최신 privateKeys 동적 로드
 
     if (!(walletId in privateKeys)) {
-      //throw new BadRequestException('Private key not found for the wallet.');
+      console.log('Private key not found for the wallet. - ', walletId);
       return false;
     }
 
-    const privateKey = privateKeys[walletId]; // 안전하게 접근
+    const privateKey = privateKeys[walletId];
     const walletAddress = wallet.address;
     const usdtBalance = await this.getUsdtBalance(walletAddress);
 
-    //console.log('transferUsdt - privateKey', privateKey);
-    //console.log('transferUsdt - walletAddress', walletAddress);
-    //console.log('transferUsdt - usdtBalance', usdtBalance);
-
     if (usdtBalance < totalPrice) {
-      //throw new BadRequestException('Insufficient USDT balance.');
+      console.log('Insufficient USDT balance.');
       return false;
     }
 
     const bnbBalance = await this.getBnbBalance(walletAddress);
-
-    //console.log('transferUsdt - bnbBalance', bnbBalance);
 
     if (bnbBalance < 0.0001) {
       return false;
@@ -103,9 +108,7 @@ export class TokenTransferService {
       'function transfer(address _to, uint256 _value) returns (bool)',
     ];
 
-    // 최신 ethers에서 Wallet 생성
     const wallet = new ethers.Wallet(privateKey).connect(this.provider);
-
     const contract = new ethers.Contract(
       this.bscUsdtContractAddress,
       abi,
@@ -136,6 +139,8 @@ export class TokenTransferService {
     if (!walletId) {
       throw new BadRequestException('Wallet not found for the given user ID.');
     }
+
+    const privateKeys = this.loadPrivateKeys(); // 최신 privateKeys 동적 로드
 
     if (!privateKeys[walletId]) {
       throw new BadRequestException('Company wallet private key not found.');

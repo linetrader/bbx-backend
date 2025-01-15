@@ -48,7 +48,7 @@ export class ReferrerUsersService {
     //const userId = this.usersService.findUserIdByUsername(userName);
 
     // 유효성 검사
-    if (feeRate <= 0 || feeRate > 100) {
+    if (feeRate < 0 || feeRate > 100) {
       throw new BadRequestException(
         'Invalid fee rate. Must be between 0 and 100.',
       );
@@ -122,20 +122,23 @@ export class ReferrerUsersService {
       // 2. 수익 계산
       const profit = totalPrice * (feeRate / 100);
 
-      //console.log('calculateReferralRewards - userName', userName);
-      //console.log('calculateReferralRewards - feeRate', feeRate);
-      //console.log('calculateReferralRewards - totalPrice', totalPrice);
+      if (profit > 0) {
+        //console.log('calculateReferralRewards - userName', userName);
+        //console.log('calculateReferralRewards - feeRate', feeRate);
+        //console.log('calculateReferralRewards - totalPrice', totalPrice);
 
-      // 3. 추천인 지갑에 수익 추가
-      await this.walletsService.updateUsdtBalance(userName, profit);
-      //await this.tokenTransferService.addRewardToWallet(referrerId, profit);
+        // 3. 추천인 지갑에 수익 추가
+        await this.walletsService.updateUsdtBalance(userName, profit);
+        //await this.tokenTransferService.addRewardToWallet(referrerId, profit);
 
-      // 4. 수익 로그 기록
-      await this.referrerLogsService.createReferralLog(
-        userName,
-        packageType,
-        profit,
-      );
+        // 4. 수익 로그 기록
+        await this.referrerLogsService.createReferralLog(
+          userName,
+          referrerUserName,
+          packageType,
+          profit,
+        );
+      }
 
       // 5. 다음 상위 추천인으로 이동
       currentUserName = referrerUserName;

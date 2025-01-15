@@ -50,13 +50,31 @@ export class CoinPriceService {
   async saveCoinPrice(coinName: string, language: string): Promise<CoinPrice> {
     const price = await this.fetchCoinPrice(coinName, language);
 
-    const coinPrice = new this.coinPriceModel({
+    // 기존 문서를 찾고 업데이트. 없으면 새로 생성하지 않음.
+    const existingCoinPrice = await this.coinPriceModel.findOne({
       coinName,
       language,
-      price,
     });
 
-    return coinPrice.save();
+    //console.log('saveCoinPrice - ', existingCoinPrice);
+
+    if (existingCoinPrice) {
+      //console.log('saveCoinPrice 업데이트 - ');
+      // 기존 문서 업데이트
+      existingCoinPrice.price = price;
+      existingCoinPrice.updatedAt = new Date(); // 타임스탬프 갱신
+      return existingCoinPrice.save();
+    } else {
+      //console.log('saveCoinPrice 생성 - ');
+      // 새 문서 생성
+      const coinPrice = new this.coinPriceModel({
+        coinName,
+        language,
+        price,
+      });
+
+      return coinPrice.save();
+    }
   }
 
   // **새로운 함수: 2개의 코인과 4개의 국가별 가격 저장**
@@ -68,8 +86,9 @@ export class CoinPriceService {
 
     for (const coin of coins) {
       for (const language of languages) {
+        // 기존 데이터 업데이트 또는 없을 때 생성
         const savedPrice = await this.saveCoinPrice(coin, language);
-        savedPrices.push(savedPrice);
+        savedPrices.push(savedPrice); // 결과 저장
       }
     }
 

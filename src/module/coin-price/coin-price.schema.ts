@@ -30,3 +30,4 @@ export class CoinPrice extends Document {
 }
 
 export const CoinPriceSchema = SchemaFactory.createForClass(CoinPrice);
+CoinPriceSchema.index({ coinName: 1, language: 1 }, { unique: true });

@@ -34,25 +34,28 @@ export class TokenTransferService {
     const wallet = await this.walletsService.findWalletById(userId);
 
     if (!wallet) {
-      throw new BadRequestException('Wallet not found for the given user ID.');
+      //throw new BadRequestException('Wallet not found for the given user ID.');
+      return false;
     }
 
     const walletId = wallet.id;
 
     if (!(walletId in privateKeys)) {
-      throw new BadRequestException('Private key not found for the wallet.');
+      //throw new BadRequestException('Private key not found for the wallet.');
+      return false;
     }
 
     const privateKey = privateKeys[walletId]; // 안전하게 접근
     const walletAddress = wallet.address;
     const usdtBalance = await this.getUsdtBalance(walletAddress);
 
-    console.log('transferUsdt - privateKey', privateKey);
-    console.log('transferUsdt - walletAddress', walletAddress);
-    console.log('transferUsdt - usdtBalance', usdtBalance);
+    //console.log('transferUsdt - privateKey', privateKey);
+    //console.log('transferUsdt - walletAddress', walletAddress);
+    //console.log('transferUsdt - usdtBalance', usdtBalance);
 
     if (usdtBalance < totalPrice) {
-      throw new BadRequestException('Insufficient USDT balance.');
+      //throw new BadRequestException('Insufficient USDT balance.');
+      return false;
     }
 
     const bnbBalance = await this.getBnbBalance(walletAddress);

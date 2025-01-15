@@ -11,6 +11,7 @@ import { ContractsModule } from '../contracts/contracts.module';
 import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import MiningLogsModule
 import { UsersModule } from '../users/users.module';
 import { TokenTransferModule } from '../token-transfer/token-transfer.module';
+import { ReferrerUsersModule } from '../referrer-users/referrer-users.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TokenTransferModule } from '../token-transfer/token-transfer.module';
     MiningLogsModule,
     UsersModule,
     TokenTransferModule,
+    ReferrerUsersModule,
   ],
   providers: [PackageUsersResolver, PackageUsersService],
   exports: [PackageUsersService], // MongooseModule을 exports에 추가

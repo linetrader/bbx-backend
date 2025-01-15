@@ -18,8 +18,7 @@ import { PackageService } from '../package/package.service';
 import { GetMiningCustomerResponse } from './dto/package-users.dto';
 import { UsersService } from '../users/users.service';
 import { TokenTransferService } from '../token-transfer/token-transfer.service';
-
-//interface minitData
+import { ReferrerUsersService } from '../referrer-users/referrer-users.service';
 
 @Injectable()
 export class PackageUsersService implements OnModuleInit {
@@ -38,6 +37,7 @@ export class PackageUsersService implements OnModuleInit {
     private readonly miningLogsService: MiningLogsService,
     private readonly usersService: UsersService,
     private readonly tokenTransferService: TokenTransferService,
+    private readonly referrerUsersService: ReferrerUsersService,
   ) {}
 
   async onModuleInit() {
@@ -228,7 +228,7 @@ export class PackageUsersService implements OnModuleInit {
     userId: string,
   ): Promise<boolean> {
     // 1. 요청 사용자가 어드민인지 확인
-    const requestingUser = await this.usersService.isValidAdmin(userId);
+    const requestingUser = await this.usersService.isValidSuperUser(userId);
     if (!requestingUser) {
       throw new BadRequestException(
         'Unauthorized: Access is restricted to admins only.',
@@ -242,33 +242,35 @@ export class PackageUsersService implements OnModuleInit {
 
     // 1. 유저 지갑에서 테더 회사 지갑으로 전송
     const packagePrice = await this.packageService.getPackagePrice(packageName);
-    const totalPrice = packagePrice * quantity;
-    const resTrans = await this.tokenTransferService.transferUsdt(
-      findUserId,
+    const totalPrice = packagePrice * quantity; // 총 금액
+
+    //    if (resTrans) {
+    // 2. 계약서 승인 상태 저장.
+    const isContract = this.contractsService.confirmContract(contractId);
+    if (!isContract) {
+      throw new BadRequestException('계약서가 없습니다.');
+    }
+
+    // 3. 업데이트 패키지.
+    const isUpdate = this.updateUserPackage(findUserId, packageName, quantity);
+    if (!isUpdate) {
+      return false;
+    }
+
+    // 4. 레퍼럴 수익 정산.
+    await this.referrerUsersService.calculateReferralRewards(
+      username,
+      packageName,
       totalPrice,
     );
 
-    if (resTrans) {
-      // 2. 계약서 승인 상태 저장.
-      const isContract = this.contractsService.confirmContract(contractId);
-      if (!isContract) {
-        throw new BadRequestException('계약서가 없습니다.');
-      }
+    // 1. 유저 지갑에서 테더 회사 지갑으로 전송
+    await this.tokenTransferService.transferUsdt(findUserId, totalPrice);
 
-      // 3. 업데이트 패키지.
-      const isUpdate = this.updateUserPackage(
-        findUserId,
-        packageName,
-        quantity,
-      );
-      if (!isUpdate) {
-        return false;
-      }
+    return true;
+    //  }
 
-      return true;
-    }
-
-    return false;
+    //return false;
   }
 
   private async createContract(

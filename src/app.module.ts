@@ -22,6 +22,8 @@ import { MiningLogsModule } from './module/mining-logs/mining-logs.module';
 import { TotalMiningModule } from './module/total-mining/total-mining.module';
 import { CoinPriceModule } from './module/coin-price/coin-price.module';
 import { TokenTransferModule } from './module/token-transfer/token-transfer.module';
+import { ReferrerLogsModule } from './module/referrer-logs/referrer-logs.module';
+import { ReferrerUsersModule } from './module/referrer-users/referrer-users.module';
 
 @Module({
   imports: [
@@ -74,6 +76,8 @@ import { TokenTransferModule } from './module/token-transfer/token-transfer.modu
     TotalMiningModule,
     CoinPriceModule,
     TokenTransferModule,
+    ReferrerLogsModule,
+    ReferrerUsersModule,
   ],
 })
 export class AppModule implements NestModule {

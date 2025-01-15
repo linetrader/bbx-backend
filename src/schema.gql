@@ -139,6 +139,24 @@ type Package {
   updatedAt: String!
 }
 
+type ReferrerUser {
+  id: ID!
+  userName: String!
+  referrerUserName: String!
+  packageType: String!
+  feeRate: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ReferrerLog {
+  id: ID!
+  userName: String!
+  packageType: String!
+  profit: Float!
+  createdAt: String!
+}
+
 type GetPendingWithdrawalsResponse {
   id: ID!
   username: String!
@@ -213,6 +231,8 @@ type Query {
 
   """Fetch all contracts for the user with an optional status filter"""
   getPackageRecords(status: String! = "approved"): [Contract!]!
+  getReferrerUsers: [ReferrerUser!]!
+  getReferralLogs: [ReferrerLog!]!
   getPendingWithdrawalsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingWithdrawalsPaginatedResponse!
   getPendingWithdrawals: [WithdrawList!]!
   getCoinPrice(coinName: String!, language: String!): CoinPrice
@@ -234,6 +254,7 @@ type Mutation {
   verifyOnlyOTP(otp: String!): Boolean!
   purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
   confirmContract(contractId: String!, username: String!, packageName: String!, quantity: Int!): Boolean!
+  addReferrerUser(userName: String!, referrerUserName: String!, packageType: String!, feeRate: Float!): ReferrerUser!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!
   rejectWithdrawal(withdrawalId: String!, remarks: String): Boolean!

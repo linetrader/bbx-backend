@@ -40,7 +40,7 @@ export class User extends Document {
 
   @Prop({ type: String, index: true })
   @Field({ nullable: true })
-  referrer?: string;
+  referrer!: string;
 
   @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
   @Field({ nullable: true })

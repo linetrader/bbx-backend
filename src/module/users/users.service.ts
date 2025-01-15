@@ -53,6 +53,24 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async findMyReferrer(username: string): Promise<string | null> {
+    //console.log('findMyReferrer - ', username);
+    const user = await this.userModel.findOne({ username }).exec();
+    //console.log('findMyReferrer - ', user);
+    if (user && user.referrer) {
+      return user.referrer;
+    }
+    return null;
+  }
+
+  async isValidSuperUser(userId: string): Promise<boolean> {
+    const user = await this.userModel.findById(userId).exec();
+    if (user && user.userLevel === 1) {
+      return true;
+    }
+    return false;
+  }
+
   async isValidAdmin(userId: string): Promise<boolean> {
     //console.log('isValidAdmin - ', userId);
     const user = await this.userModel.findById(userId).exec();

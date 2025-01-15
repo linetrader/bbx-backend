@@ -298,4 +298,17 @@ export class WalletsService implements OnModuleInit {
       throw new BadRequestException('Failed to update wallet details');
     }
   }
+
+  async updateUsdtBalance(username: string, profit: number): Promise<boolean> {
+    const userId = await this.usersService.findUserIdByUsername(username);
+    //console.log('updateUsdtBalance - userId', userId);
+    const wallet = await this.findWalletById(userId);
+    //console.log('updateUsdtBalance - profit', profit);
+    if (wallet) {
+      wallet.usdtBalance += profit;
+      wallet.save();
+      return true;
+    }
+    return false;
+  }
 }

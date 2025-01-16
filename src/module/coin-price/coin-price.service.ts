@@ -32,10 +32,10 @@ export class CoinPriceService {
         `https://min-api.cryptocompare.com/data/price?fsym=${coinName}&tsyms=${currency}`,
       );
 
-      //console.log('fetchCoinPrice - language', language);
-      //console.log('fetchCoinPrice - coinName', coinName);
-      //console.log('fetchCoinPrice - currency', currency);
-      //console.log('fetchCoinPrice - price', response);
+      console.log('fetchCoinPrice - language', language);
+      console.log('fetchCoinPrice - coinName', coinName);
+      console.log('fetchCoinPrice - currency', currency);
+      console.log('fetchCoinPrice - price', response.data[currency]);
 
       return response.data[currency] || 0;
     } catch (error) {
@@ -61,7 +61,9 @@ export class CoinPriceService {
     if (existingCoinPrice) {
       //console.log('saveCoinPrice 업데이트 - ');
       // 기존 문서 업데이트
-      existingCoinPrice.price = price;
+      if (price) {
+        existingCoinPrice.price = price;
+      }
       existingCoinPrice.updatedAt = new Date(); // 타임스탬프 갱신
       return existingCoinPrice.save();
     } else {
@@ -99,6 +101,8 @@ export class CoinPriceService {
     coinName: string,
     language: string,
   ): Promise<CoinPrice | null> {
+    console.log('getCoinPrice - coinName', coinName);
+    console.log('getCoinPrice - language', language);
     return this.coinPriceModel
       .findOne({ coinName, language })
       .sort({ createdAt: -1 });

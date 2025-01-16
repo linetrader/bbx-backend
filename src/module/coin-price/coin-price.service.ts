@@ -32,10 +32,10 @@ export class CoinPriceService {
         `https://min-api.cryptocompare.com/data/price?fsym=${coinName}&tsyms=${currency}`,
       );
 
-      console.log('fetchCoinPrice - language', language);
-      console.log('fetchCoinPrice - coinName', coinName);
-      console.log('fetchCoinPrice - currency', currency);
-      console.log('fetchCoinPrice - price', response.data[currency]);
+      //console.log('fetchCoinPrice - language', language);
+      //console.log('fetchCoinPrice - coinName', coinName);
+      //console.log('fetchCoinPrice - currency', currency);
+      //console.log('fetchCoinPrice - price', response.data[currency]);
 
       return response.data[currency] || 0;
     } catch (error) {

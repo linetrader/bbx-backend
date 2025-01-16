@@ -85,9 +85,9 @@ export class WalletsService implements OnModuleInit {
 
   async findWalletIdByAddress(address: string): Promise<string | null> {
     try {
-      //console.log('findWalletById - userId:', userId);
+      //console.log('findWalletIdByAddress - address:', address);
       const wallet = await this.walletModel.findOne({ address }).exec();
-      //console.log('findWalletById - wallet:', wallet);
+      //console.log('findWalletIdByAddress - wallet:', wallet);
       return wallet?.id;
     } catch (error) {
       console.error('Error in findWalletById:', error);

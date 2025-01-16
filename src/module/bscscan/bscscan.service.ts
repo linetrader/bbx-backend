@@ -83,31 +83,48 @@ export class BscScanService {
 
     for (const wallet of wallets) {
       try {
-        // 1. 최근 트랜잭션 1개 가져오기
+        // 1. 최근 트랜잭션 가져오기
         const { balance, transactionHash } =
           await this.getLatestTransaction(wallet);
 
         if (!transactionHash) {
-          //console.log(
-          // `No new transaction detected for wallet ${wallet.address}`,
-          //);
+          //console.log(`[INFO] No new transaction for wallet: ${wallet.address}`,);
           continue;
         }
 
-        // 2. DB에 트랜잭션 해시 중복 체크
+        // 2. 트랜잭션 중복 체크
         const isDuplicate =
           await this.transactionService.checkTransactionHashExists(
             transactionHash,
           );
-
         if (isDuplicate) {
-          //console.log(
-          //  `Duplicate transaction hash detected: ${transactionHash}`,
-          //);
+          //console.log(`[INFO] Duplicate transaction hash: ${transactionHash}`);
           continue;
         }
 
-        // 3. BNB 잔액 체크
+        // 3. 잔액 업데이트
+        const amountDeposited = balance;
+        const totalBalance = wallet.usdtBalance + amountDeposited;
+        //console.log('amountDeposited:', amountDeposited);
+        //console.log('wallet.usdtBalance:', wallet.usdtBalance);
+        //console.log('totalBalance:', totalBalance);
+
+        wallet.usdtBalance = totalBalance;
+        await wallet.save();
+
+        // 4. 트랜잭션 저장
+        if (wallet.id) {
+          await this.transactionService.createTransaction({
+            type: 'deposit',
+            amount: amountDeposited,
+            token: 'USDT',
+            transactionHash,
+            userId: wallet.userId,
+            walletId: wallet.id,
+          });
+        }
+
+        // 5. BNB 잔액 확인
         const bnbBalance = await this.tokenTransferService.getBnbBalance(
           wallet.address,
         );
@@ -115,58 +132,29 @@ export class BscScanService {
           `[INFO] Wallet ${wallet.address} BNB Balance: ${bnbBalance}`,
         );
 
-        // 4. BNB 잔액이 0.0002 이하인 경우 회사 지갑에서 BNB 0.001 송금
         if (bnbBalance <= 0.0002) {
           console.log(
-            `[INFO] Wallet ${wallet.address} has low BNB balance. Sending 0.001 BNB.`,
+            `[INFO] Low BNB balance. Sending 0.001 BNB to ${wallet.address}`,
           );
           const success = await this.tokenTransferService.transferBnb(
             wallet.address,
             0.001,
           );
           if (success) {
-            console.log(`[INFO] Sent 0.001 BNB to wallet ${wallet.address}`);
+            console.log(
+              `[INFO] Successfully sent 0.001 BNB to ${wallet.address}`,
+            );
           } else {
             console.error(
-              `[ERROR] Failed to send 0.001 BNB to wallet ${wallet.address}`,
+              `[ERROR] Failed to send 0.001 BNB to ${wallet.address}`,
             );
           }
         } else {
-          console.log('[INFO] wallet.bnbBalance', wallet.bnbBalance);
-          console.log('[INFO] bnbBalance', bnbBalance);
-          if (wallet.bnbBalance != bnbBalance) {
+          if (wallet.bnbBalance !== bnbBalance) {
             wallet.bnbBalance = bnbBalance;
+            await wallet.save();
           }
         }
-
-        // 3. 새로운 트랜잭션 처리 및 DB 업데이트
-        const amountDeposited = balance;
-        const totalBalance = wallet.usdtBalance + amountDeposited;
-        //console.log('amountDeposited : ', amountDeposited);
-        //console.log('wallet.usdtBalance : ', wallet.usdtBalance);
-        //console.log('totalBalance : ', totalBalance);
-
-        wallet.usdtBalance = totalBalance;
-
-        await wallet.save();
-
-        if (wallet._id) {
-          await this.transactionService.createTransaction({
-            type: 'deposit',
-            amount: amountDeposited,
-            token: 'USDT',
-            transactionHash,
-            userId: wallet.userId,
-            walletId: wallet._id.toString(),
-          });
-        }
-
-        // Notify user about the deposit
-        //this.walletsGateway.notifyDeposit(wallet.address, amountDeposited);
-
-        //console.log(
-        //  `New deposit detected. Amount: ${amountDeposited}, Hash: ${transactionHash}`,
-        //);
       } catch (error) {
         console.error(`Error monitoring wallet ${wallet.address}:`, error);
       }

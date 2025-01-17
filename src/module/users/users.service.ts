@@ -53,14 +53,24 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async findMyReferrer(username: string): Promise<string | null> {
+  async findMyReferrerById(userId: string): Promise<string | null> {
+    //console.log('findMyReferrer - ', username);
+    const user = await this.userModel.findById(userId).exec();
+    //console.log('findMyReferrer - ', user);
+    if (user && user.referrer) {
+      return user.referrer;
+    }
+    return null;
+  }
+
+  async findMyReferrer(username: string): Promise<string> {
     //console.log('findMyReferrer - ', username);
     const user = await this.userModel.findOne({ username }).exec();
     //console.log('findMyReferrer - ', user);
     if (user && user.referrer) {
       return user.referrer;
     }
-    return null;
+    return '';
   }
 
   async isValidSuperUser(userId: string): Promise<boolean> {
@@ -117,14 +127,17 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
-  async getUserName(userId: string): Promise<string | null> {
+  async getUserName(userId: string): Promise<string> {
     if (!userId || typeof userId !== 'string') {
       throw new BadRequestException('Invalid user ID');
     }
 
     try {
       const user = await this.userModel.findById(userId).exec(); // userId는 문자열이어야 합니다
-      return user?.username || null;
+      if (!user) {
+        throw new BadRequestException('Not user');
+      }
+      return user.username;
     } catch (error) {
       console.error('[getUserName] Error fetching user:', error);
       throw new BadRequestException('Failed to fetch user');

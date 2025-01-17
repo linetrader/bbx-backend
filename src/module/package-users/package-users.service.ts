@@ -43,7 +43,70 @@ export class PackageUsersService implements OnModuleInit {
   async onModuleInit() {
     //console.log('Starting mining process for active packages...');
     await this.initialMiningForAllPackages();
+    await this.initialPacakageUsers();
     //this.startMiningForPackage();
+  }
+
+  private async initialPacakageUsers(): Promise<void> {
+    try {
+      // 1. groupLeaderName이 없는 문서 찾기
+      const packageUsersWithoutGroupLeader = await this.packageUsersModel
+        .find({ groupLeaderName: { $exists: false } })
+        .exec();
+
+      if (
+        !packageUsersWithoutGroupLeader ||
+        packageUsersWithoutGroupLeader.length === 0
+      ) {
+        console.log('No documents found without groupLeaderName.');
+        return;
+      }
+
+      // 2. 문서 업데이트 처리
+      for (const user of packageUsersWithoutGroupLeader) {
+        const userId = user.userId;
+
+        // username 가져오기
+        const userName = await this.usersService.getUserName(userId);
+
+        // (1) groupLeaderName 가져오기
+        const groupLeaderName = await this.findMiningGroupLeaderName(
+          userName,
+          user.packageType,
+        );
+
+        // (2) referrerUserName 가져오기
+        const referrerUserName =
+          await this.usersService.findMyReferrerById(userId);
+
+        if (!referrerUserName) {
+          console.warn(`Referrer not found for userId: ${userId}. Skipping.`);
+          continue; // 레퍼럴이 없으면 다음 문서로 넘어감
+        }
+
+        if (!groupLeaderName) {
+          console.warn(
+            `Group leader not found for userId: ${userId}. Skipping.`,
+          );
+          continue; // 그룹 리더를 찾을 수 없으면 다음 문서로 넘어감
+        }
+
+        // (3) 문서 업데이트
+        user.referrerUserName = referrerUserName;
+        user.groupLeaderName = groupLeaderName;
+
+        // (4) 저장
+        await user.save();
+        console.log(
+          `Updated package user: ${userId} with groupLeaderName: ${groupLeaderName}`,
+        );
+      }
+
+      console.log('Initial package users update completed.');
+    } catch (error) {
+      console.error('[ERROR] Failed to initialize package users:', error);
+      throw new BadRequestException('Failed to initialize package users.');
+    }
   }
 
   async getMiningCustomers(
@@ -61,6 +124,7 @@ export class PackageUsersService implements OnModuleInit {
 
     // 2. 현재 사용자(user.id) 산하의 userIds 가져오기
     const userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
+    //console.log('getMiningCustomers', userIds);
 
     // 3. userIds를 기준으로 패키지 사용자 정보 검색
     const packageUsers = await this.packageUsersModel
@@ -75,10 +139,13 @@ export class PackageUsersService implements OnModuleInit {
       .countDocuments({ userId: { $in: userIds } })
       .exec();
 
+    //console.log('getMiningCustomers - totalCustomers', totalCustomers);
+
     // 5. 데이터를 GetMiningCustomerResponse 형식으로 변환
     const data = await Promise.all(
       packageUsers.map(async (user) => {
         const username = await this.usersService.getUserName(user.userId);
+        //console.log('getMiningCustomers - username', username);
         return {
           id: user.id,
           username: username || 'Unknown',
@@ -198,7 +265,7 @@ export class PackageUsersService implements OnModuleInit {
     //const userId = await this.usersService.findUserIdByUsername(username);
 
     // 2. 월렛 id 찾기
-    const walletId = await this.walletsService.findWalletIdByUserId(userId);
+    //const walletId = await this.walletsService.findWalletIdByUserId(userId);
 
     const userPackage = await this.packageUsersModel.findOne({
       userId,
@@ -208,15 +275,39 @@ export class PackageUsersService implements OnModuleInit {
     if (userPackage) {
       userPackage.quantity += quantity;
       await userPackage.save();
-    } else {
-      const newUserPackage = new this.packageUsersModel({
-        userId,
-        walletId,
-        packageType: packageName,
-        quantity,
-        miningBalance: 0.0,
-      });
-      await newUserPackage.save();
+    }
+  }
+
+  private async findMiningGroupLeaderName(
+    inUserName: string,
+    packageType: string,
+  ): Promise<string | null> {
+    try {
+      // Step 1: 현재 유저가 속한 그룹의 리더 이름 검색
+      const leaderName = await this.referrerUsersService.getGroupLeaderName(
+        inUserName,
+        packageType,
+      );
+
+      if (leaderName) {
+        // 그룹 리더 이름이 발견되면 바로 반환
+        return leaderName;
+      }
+
+      // Step 2: 현재 유저의 부모(referrer) 검색
+      const referrerUserName =
+        await this.usersService.findMyReferrer(inUserName);
+
+      if (!referrerUserName) {
+        // 부모가 없는 경우 최상위 유저로 간주, 리더를 찾을 수 없으므로 null 반환
+        return null;
+      }
+
+      // Step 3: 부모를 기준으로 재귀 호출하여 그룹 리더 이름 검색
+      return this.findMiningGroupLeaderName(referrerUserName, packageType);
+    } catch (error) {
+      console.error('[ERROR] Failed to find mining group leader name:', error);
+      throw new BadRequestException('Failed to find mining group leader name.');
     }
   }
 
@@ -246,16 +337,13 @@ export class PackageUsersService implements OnModuleInit {
 
     //    if (resTrans) {
     // 2. 계약서 승인 상태 저장.
-    const isContract = this.contractsService.confirmContract(contractId);
+    const isContract = await this.contractsService.confirmContract(contractId);
     if (!isContract) {
       throw new BadRequestException('계약서가 없습니다.');
     }
 
     // 3. 업데이트 패키지.
-    const isUpdate = this.updateUserPackage(findUserId, packageName, quantity);
-    if (!isUpdate) {
-      return false;
-    }
+    await this.updateUserPackage(findUserId, packageName, quantity);
 
     // 4. 레퍼럴 수익 정산.
     await this.referrerUsersService.calculateReferralRewards(
@@ -343,12 +431,32 @@ export class PackageUsersService implements OnModuleInit {
       }
 
       // 6. 사용자 패키지 업데이트
-      // await this.updateUserPackage(
-      //   user.id,
-      //   selectedPackage.name,
-      //   myWallet.id,
-      //   quantity,
-      // );
+      const userPackage = await this.packageUsersModel.findOne({
+        userId: user.id,
+        packageType: selectedPackage.name,
+      });
+
+      // 7. 없으면 생성
+      if (!userPackage) {
+        const referrer = await this.usersService.findMyReferrerById(user.id);
+        if (!referrer) {
+          throw new BadRequestException('Not referrer');
+        }
+        const leaderName = await this.findMiningGroupLeaderName(
+          referrer,
+          selectedPackage.name,
+        );
+        const newUserPackage = new this.packageUsersModel({
+          userId: user.id,
+          groupLeaderName: leaderName,
+          referrerUserName: referrer,
+          walletId: myWallet.id,
+          packageType: selectedPackage.name,
+          quantity: 0.0,
+          miningBalance: 0.0,
+        });
+        await newUserPackage.save();
+      }
 
       return `Successfully purchased ${quantity} of ${selectedPackage.name}.`;
     } catch (error) {

@@ -14,6 +14,14 @@ export class PackageUsers extends Document {
   @Field()
   userId!: string;
 
+  @Prop({ required: true })
+  @Field({ nullable: true })
+  groupLeaderName!: string;
+
+  @Prop({ required: true })
+  @Field()
+  referrerUserName!: string;
+
   @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
   @Field({ nullable: true })
   walletId?: string;

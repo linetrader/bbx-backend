@@ -91,6 +91,8 @@ type WithdrawList {
 type PackageUsers {
   id: ID!
   userId: String!
+  groupLeaderName: String
+  referrerUserName: String!
   walletId: String
   packageType: String!
   quantity: Float!
@@ -141,9 +143,10 @@ type Package {
 
 type ReferrerUser {
   id: ID!
+  groupLeaderName: String!
   userName: String!
-  referrerUserName: String!
   packageType: String!
+  feeRateLeader: Float!
   feeRate: Float!
   createdAt: String!
   updatedAt: String!
@@ -151,6 +154,7 @@ type ReferrerUser {
 
 type ReferrerLog {
   id: ID!
+  groupLeaderName: String!
   userName: String!
   referrerUserName: String!
   packageType: String!
@@ -237,6 +241,7 @@ type Query {
 
   """Fetch all contracts for the user with an optional status filter"""
   getPackageRecords(status: String! = "approved"): [Contract!]!
+  getMiningGroup: [ReferrerUser!]!
   getReferrerUsers: [ReferrerUser!]!
   getReferralLogs: [ReferrerLog!]!
   getAllReferralLogsAdmin(limit: Int! = 10, page: Int! = 1): AdminReferralLogsResponse!
@@ -261,6 +266,7 @@ type Mutation {
   verifyOnlyOTP(otp: String!): Boolean!
   purchasePackage(packageId: String!, quantity: Int!, customerName: String!, customerPhone: String!, customerAddress: String!): String!
   confirmContract(contractId: String!, username: String!, packageName: String!, quantity: Int!): Boolean!
+  addMiningGroup(groupLeaderName: String!, userName: String!, packageType: String!, feeRateLeader: Int!, feeRate: Int!): ReferrerUser!
   addReferrerUser(userName: String!, referrerUserName: String!, packageType: String!, feeRate: Float!): ReferrerUser!
   requestWithdrawal(currency: String!, amount: Float!, otp: String!): Boolean!
   approveWithdrawal(withdrawalId: String!): Boolean!

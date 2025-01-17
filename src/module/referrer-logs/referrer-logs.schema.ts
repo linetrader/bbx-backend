@@ -12,6 +12,10 @@ export class ReferrerLog extends Document {
 
   @Prop({ required: true, index: true })
   @Field() // GraphQL 필드로 노출
+  groupLeaderName!: string;
+
+  @Prop({ required: true, index: true })
+  @Field() // GraphQL 필드로 노출
   userName!: string;
 
   @Prop({ required: true, index: true })

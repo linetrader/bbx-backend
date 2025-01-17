@@ -11,19 +11,23 @@ export class ReferrerUser extends Document {
   id!: string;
 
   @Prop({ required: true })
-  @Field() // GraphQL 필드로 노출
+  @Field()
+  groupLeaderName!: string;
+
+  @Prop({ required: true })
+  @Field()
   userName!: string;
 
   @Prop({ required: true })
-  @Field() // GraphQL 필드로 노출
-  referrerUserName!: string;
-
-  @Prop({ required: true })
-  @Field() // GraphQL 필드로 노출
+  @Field()
   packageType!: string;
 
   @Prop({ required: true, type: Number })
-  @Field() // GraphQL 필드로 노출
+  @Field()
+  feeRateLeader!: number;
+
+  @Prop({ required: true, type: Number })
+  @Field()
   feeRate!: number;
 
   @Field(() => String)

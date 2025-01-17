@@ -176,7 +176,9 @@ export class ReferrerUsersService {
       }
 
       // 5. 다음 상위 추천인으로 이동
-      currentUserName = await this.usersService.findMyReferrer(currentUserName);
+      //currentUserName = await this.usersService.findMyReferrer(currentUserName);
+      // 한번 수행하고 벗어남.
+      break;
     }
   }
 

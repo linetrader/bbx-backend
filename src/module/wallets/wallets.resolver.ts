@@ -56,10 +56,10 @@ export class WalletsResolver {
     @Args('otp') otp: string,
     @Context() context: any,
   ): Promise<boolean> {
-    console.log('[DEBUG] Context:', context);
+    //console.log('[DEBUG] Context:', context);
 
     const user = context.req?.user; // 인증된 사용자 정보 확인
-    console.log('[DEBUG] Extracted user:', user);
+    //console.log('[DEBUG] Extracted user:', user);
 
     if (!user) {
       console.error('[ERROR] User is not authenticated');

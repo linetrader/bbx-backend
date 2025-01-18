@@ -12,6 +12,7 @@ import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import 
 import { UsersModule } from '../users/users.module';
 import { TokenTransferModule } from '../token-transfer/token-transfer.module';
 import { ReferrerUsersModule } from '../referrer-users/referrer-users.module';
+import { CoinPriceModule } from '../coin-price/coin-price.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ReferrerUsersModule } from '../referrer-users/referrer-users.module';
     UsersModule,
     TokenTransferModule,
     ReferrerUsersModule,
+    CoinPriceModule,
   ],
   providers: [PackageUsersResolver, PackageUsersService],
   exports: [PackageUsersService], // MongooseModule을 exports에 추가

@@ -12,6 +12,10 @@ export class WithdrawList extends Document {
 
   @Prop({ required: true })
   @Field()
+  userId!: string;
+
+  @Prop({ required: true })
+  @Field()
   email!: string;
 
   @Prop({ required: true, enum: ['USDT', 'DOGE', 'BTC'] })

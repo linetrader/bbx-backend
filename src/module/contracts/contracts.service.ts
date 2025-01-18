@@ -26,8 +26,8 @@ export class ContractsService implements OnModuleInit {
 
   // 모듈 초기화 시 호출
   async onModuleInit() {
-    await this.initializeDefaultContract();
-    await this.updateMissingStatusFields();
+    //await this.initializeDefaultContract();
+    //await this.updateMissingStatusFields();
   }
 
   async confirmContract(contractId: string): Promise<boolean> {

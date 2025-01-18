@@ -6,6 +6,9 @@ export class GetPendingWithdrawalsResponse {
   id!: string;
 
   @Field()
+  userId!: string;
+
+  @Field()
   username!: string;
 
   @Field()

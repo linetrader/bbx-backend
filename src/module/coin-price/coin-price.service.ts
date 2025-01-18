@@ -101,8 +101,8 @@ export class CoinPriceService {
     coinName: string,
     language: string,
   ): Promise<CoinPrice | null> {
-    console.log('getCoinPrice - coinName', coinName);
-    console.log('getCoinPrice - language', language);
+    //console.log('getCoinPrice - coinName', coinName);
+    //console.log('getCoinPrice - language', language);
     return this.coinPriceModel
       .findOne({ coinName, language })
       .sort({ createdAt: -1 });

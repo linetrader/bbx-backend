@@ -80,6 +80,7 @@ type GenerateOtpOutput {
 
 type WithdrawList {
   id: ID!
+  userId: String!
   email: String!
   currency: String!
   amount: Float!
@@ -162,8 +163,18 @@ type ReferrerLog {
   createdAt: String!
 }
 
+type CoinPrice {
+  id: ID!
+  language: String!
+  coinName: String!
+  price: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type GetPendingWithdrawalsResponse {
   id: ID!
+  userId: String!
   username: String!
   currency: String!
   amount: Float!
@@ -211,15 +222,6 @@ type AdminReferralLogsResponse {
   total: Int!
 }
 
-type CoinPrice {
-  id: ID!
-  language: String!
-  coinName: String!
-  price: Float!
-  createdAt: String!
-  updatedAt: String!
-}
-
 type Query {
   getUserInfo: User!
 
@@ -232,6 +234,7 @@ type Query {
   getTransactionList: [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
+  getPackagesAdmin: [Package!]!
 
   """Fetch mining customers with pagination for admin"""
   getMiningCustomers(limit: Int! = 10, page: Int! = 1): GetMiningCustomersResponse!
@@ -245,9 +248,9 @@ type Query {
   getReferrerUsers: [ReferrerUser!]!
   getReferralLogs: [ReferrerLog!]!
   getAllReferralLogsAdmin(limit: Int! = 10, page: Int! = 1): AdminReferralLogsResponse!
+  getCoinPrice(coinName: String!, language: String!): CoinPrice
   getPendingWithdrawalsAdmin(limit: Int! = 10, page: Int! = 1): GetPendingWithdrawalsPaginatedResponse!
   getPendingWithdrawals: [WithdrawList!]!
-  getCoinPrice(coinName: String!, language: String!): CoinPrice
 }
 
 type Mutation {

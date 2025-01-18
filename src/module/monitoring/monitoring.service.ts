@@ -1,7 +1,7 @@
 // src/module/monitoring/monitoring.service.ts
 
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { seedInitialMonitoring } from './monitoring.initial';
+//import { seedInitialMonitoring } from './monitoring.initial';
 import { InjectModel } from '@nestjs/mongoose/dist';
 import { Monitoring } from './monitoring.schema';
 import { Model } from 'mongoose';
@@ -28,7 +28,7 @@ export class MonitoringService implements OnModuleInit {
    * 모듈 초기화 시 호출
    */
   async onModuleInit() {
-    await seedInitialMonitoring(this.monitoringModel);
+    //await seedInitialMonitoring(this.monitoringModel);
     await this.initializeMonitoringProcesses();
   }
 

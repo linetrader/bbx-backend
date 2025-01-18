@@ -10,7 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Package } from './package.schema';
 import { UsersService } from 'src/module/users/users.service';
-import { seedInitialPackages } from './initial-packages.seed';
+//import { seedInitialPackages } from './initial-packages.seed';
 
 @Injectable()
 export class PackageService implements OnModuleInit {
@@ -21,7 +21,7 @@ export class PackageService implements OnModuleInit {
 
   // 모듈 초기화 시 호출
   async onModuleInit() {
-    await seedInitialPackages(this.packageModel);
+    //await seedInitialPackages(this.packageModel);
   }
 
   async findShow(): Promise<Package[]> {
@@ -79,18 +79,24 @@ export class PackageService implements OnModuleInit {
 
     // 어드민 권한 확인
     //const isAdmin = await this.verifyAdmin(user);
-    const isAdmin = await this.userService.isValidAdmin(user.id);
+    //const isAdmin = await this.userService.isValidAdmin(user.id);
 
     // 어드민이면 모든 상품 반환, 아니면 `show` 상태의 상품만 반환
-    if (isAdmin) {
-      return this.packageModel.find().exec(); // 모든 상품 반환
-    } else {
-      return this.packageModel.find({ status: 'show' }).exec(); // `show` 상태의 상품만 반환
-    }
+    return this.packageModel.find({ status: 'show' }).exec(); // `show` 상태의 상품만 반환
   }
+
   // 총 사용자 수 반환
   async getTotalPackages(): Promise<number> {
     return this.packageModel.countDocuments().exec(); // 사용자 수 카운트
+  }
+
+  async getPackagesAdmin(userId: string): Promise<Package[]> {
+    const isAdmin = await this.userService.isValidAdmin(userId);
+    if (!isAdmin) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    return this.packageModel.find().exec(); // 모든 상품 반환
   }
 
   // 패키지 추가

@@ -19,6 +19,7 @@ import { GetMiningCustomerResponse } from './dto/package-users.dto';
 import { UsersService } from '../users/users.service';
 import { TokenTransferService } from '../token-transfer/token-transfer.service';
 import { ReferrerUsersService } from '../referrer-users/referrer-users.service';
+import { CoinPriceService } from '../coin-price/coin-price.service';
 
 @Injectable()
 export class PackageUsersService implements OnModuleInit {
@@ -38,12 +39,13 @@ export class PackageUsersService implements OnModuleInit {
     private readonly usersService: UsersService,
     private readonly tokenTransferService: TokenTransferService,
     private readonly referrerUsersService: ReferrerUsersService,
+    private readonly coinPriceService: CoinPriceService,
   ) {}
 
   async onModuleInit() {
     //console.log('Starting mining process for active packages...');
     await this.initialMiningForAllPackages();
-    await this.initialPacakageUsers();
+    //await this.initialPacakageUsers();
     //this.startMiningForPackage();
   }
 
@@ -500,6 +502,10 @@ export class PackageUsersService implements OnModuleInit {
         return false;
       }
 
+      if (100 > amount) {
+        throw new BadRequestException('100 USDT or less');
+      }
+
       if (wallet.usdtBalance > amount) {
         wallet.usdtBalance = wallet.usdtBalance - amount;
         await wallet.save();
@@ -518,10 +524,22 @@ export class PackageUsersService implements OnModuleInit {
       if (!myPackage) {
         return false;
       }
-      if (myPackage.miningBalance > amount) {
-        myPackage.miningBalance = myPackage.miningBalance - amount;
-        await myPackage.save();
-        return true;
+
+      // 코인 가격 가져오기.
+      const coinPrice = await this.coinPriceService.getCoinPrice(
+        currency,
+        'en',
+      );
+      if (coinPrice) {
+        if (100 > amount * coinPrice.price) {
+          throw new BadRequestException('100 USDT or less');
+        }
+
+        if (myPackage.miningBalance > amount) {
+          myPackage.miningBalance = myPackage.miningBalance - amount;
+          await myPackage.save();
+          return true;
+        }
       }
     } else {
       return false;

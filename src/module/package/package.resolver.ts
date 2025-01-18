@@ -21,6 +21,17 @@ export class PackageResolver {
     //return this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
   }
 
+  @Query(() => [Package])
+  async getPackagesAdmin(@Context() context: any): Promise<Package[]> {
+    const user = context.req.user; // 인증된 사용자 정보
+
+    const data = await this.packageService.getPackagesAdmin(user.id); // 인증된 사용자 정보로 패키지 조회
+
+    return data;
+
+    //return this.packageService.getPackages(user); // 인증된 사용자 정보로 패키지 조회
+  }
+
   // 패키지 추가
   // @Mutation(() => Package)
   // async addPackage(

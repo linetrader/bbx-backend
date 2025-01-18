@@ -25,6 +25,10 @@ export class WalletsService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    //await this.InitializeWallets();
+  }
+
+  private async InitializeWallets() {
     try {
       console.log('[INFO] Checking for wallets without bnbBalance field...');
 

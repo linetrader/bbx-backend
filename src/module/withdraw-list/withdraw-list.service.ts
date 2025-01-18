@@ -20,15 +20,9 @@ export class WithdrawListService {
     private readonly withdrawListModel: Model<WithdrawList>,
 
     private readonly googleOtpService: GoogleOTPService,
-    //private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
-    //private readonly transactionService: TransactionService,
-    //private readonly walletService: WalletsService,
     private readonly packageUsersService: PackageUsersService,
   ) {}
-  /**
-   * 모듈 초기화 시 호출
-   */
 
   async getPendingWithdrawalsAdmin(
     limit: number,
@@ -57,6 +51,7 @@ export class WithdrawListService {
         );
         return {
           id: withdrawal.id,
+          userId: withdrawal.userId,
           username: username || 'Unknown',
           currency: withdrawal.currency,
           amount: withdrawal.amount,
@@ -124,6 +119,7 @@ export class WithdrawListService {
 
     // 출금 요청 DB에 저장
     const withdrawal = new this.withdrawListModel({
+      userId,
       email,
       currency,
       amount,

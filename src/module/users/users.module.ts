@@ -11,6 +11,6 @@ import { User, UserSchema } from './users.schema';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   providers: [UsersService, UsersResolver],
-  exports: [UsersService], // UserModel을 외부에 내보내기 위해 MongooseModule을 exports
+  exports: [UsersService],
 })
 export class UsersModule {}

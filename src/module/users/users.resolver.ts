@@ -12,13 +12,13 @@ export class UsersResolver {
 
   @Query(() => User)
   async getUserInfo(@Context() context: any): Promise<User> {
-    const user = context.req.user; // 인증된 사용자 정보
+    const user = context.req.user;
 
     if (!user || !user.id) {
       throw new UnauthorizedException('User is not authenticated');
     }
 
-    const userInfo = await this.usersService.getUserInfo(user); // 인증된 사용자 정보 전달
+    const userInfo = await this.usersService.getUserInfo(user);
     if (!userInfo) {
       throw new BadRequestException('User not found');
     }
@@ -32,14 +32,12 @@ export class UsersResolver {
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Context() context: any,
   ): Promise<GetUsersResponse> {
-    const user = context.req.user; // 인증된 사용자 정보
+    const user = context.req.user;
     if (!user || !user.id) {
       throw new UnauthorizedException('User is not authenticated');
     }
 
     const offset = (page - 1) * limit;
-
-    // 산하 회원과 총 회원 수 가져오기
     const { users, totalUsers } =
       await this.usersService.getUsersUnderMyNetwork(user.id, limit, offset);
 
@@ -96,13 +94,11 @@ export class UsersResolver {
       throw new UnauthorizedException('User is not authenticated');
     }
 
-    // 어드민 권한 확인
     const isAdmin = await this.usersService.isValidAdmin(user.id);
     if (!isAdmin) {
       throw new UnauthorizedException('Unauthorized: Admin access only');
     }
 
-    // 사용자 데이터 업데이트
     return this.usersService.updateUserDetails(userId, {
       username,
       firstname,

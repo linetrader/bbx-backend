@@ -11,10 +11,10 @@ export class LoginResponse {
 
 @ObjectType()
 export class GetUsersResponse {
-  @Field(() => [User]) // 사용자 배열
+  @Field(() => [User])
   data: User[];
 
-  @Field(() => Int) // 총 사용자 수
+  @Field(() => Int)
   totalUsers: number;
 
   constructor(data: User[], totalUsers: number) {

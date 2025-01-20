@@ -4,7 +4,7 @@ import { Field, ObjectType, ID } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({ timestamps: true }) // timestamps 옵션 활성화
+@Schema({ timestamps: true })
 @ObjectType()
 export class User extends Document {
   @Field(() => ID)
@@ -42,13 +42,13 @@ export class User extends Document {
   @Field({ nullable: true })
   referrer!: string;
 
-  @Prop({ type: String, required: false }) // Wallet과의 관계를 나타내는 필드
+  @Prop({ type: String, required: false })
   @Field({ nullable: true })
   walletId?: string;
 
-  @Prop({ type: Number, default: 7 }) // 기본값: 일반회원
+  @Prop({ type: Number, default: 7 })
   @Field({ description: 'User Level', defaultValue: 7 })
-  userLevel!: number; // 슈퍼 어드민(1) ~ 일반회원(7)
+  userLevel!: number;
 
   @Field(() => String)
   createdAt!: Date;

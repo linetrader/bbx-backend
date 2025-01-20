@@ -17,9 +17,9 @@ export class BscScanService {
 
   constructor(
     @InjectModel(Wallet.name)
-    private readonly walletModel: Model<Wallet>, // walletModel 정의
+    private readonly walletModel: Model<Wallet>,
     private readonly configService: ConfigService,
-    private readonly transactionService: TransactionService, // transactionService 정의
+    private readonly transactionService: TransactionService,
     private readonly tokenTransferService: TokenTransferService,
   ) {
     this.bscScanApiUrl = this.configService.get<string>('BSC_API_URL') || '';
@@ -32,7 +32,7 @@ export class BscScanService {
   async getLatestTransaction(
     wallet: Wallet,
   ): Promise<{ balance: number; transactionHash: string }> {
-    if (!wallet || !wallet.address) {
+    if (!wallet?.address) {
       throw new BadRequestException(
         'Wallet object is invalid or address is missing.',
       );
@@ -58,7 +58,6 @@ export class BscScanService {
 
       const transactions = response.data.result;
 
-      // 4. 가장 최근 트랜잭션 가져오기 (입금만)
       const latestDeposit = transactions.find(
         (tx: any) => tx.to.toLowerCase() === wallet.address.toLowerCase(),
       );
@@ -83,36 +82,27 @@ export class BscScanService {
 
     for (const wallet of wallets) {
       try {
-        // 1. 최근 트랜잭션 가져오기
         const { balance, transactionHash } =
           await this.getLatestTransaction(wallet);
 
         if (!transactionHash) {
-          //console.log(`[INFO] No new transaction for wallet: ${wallet.address}`,);
           continue;
         }
 
-        // 2. 트랜잭션 중복 체크
         const isDuplicate =
           await this.transactionService.checkTransactionHashExists(
             transactionHash,
           );
         if (isDuplicate) {
-          //console.log(`[INFO] Duplicate transaction hash: ${transactionHash}`);
           continue;
         }
 
-        // 3. 잔액 업데이트
         const amountDeposited = balance;
         const totalBalance = wallet.usdtBalance + amountDeposited;
-        //console.log('amountDeposited:', amountDeposited);
-        //console.log('wallet.usdtBalance:', wallet.usdtBalance);
-        //console.log('totalBalance:', totalBalance);
 
         wallet.usdtBalance = totalBalance;
         await wallet.save();
 
-        // 4. 트랜잭션 저장
         if (wallet.id) {
           await this.transactionService.createTransaction({
             type: 'deposit',
@@ -124,7 +114,6 @@ export class BscScanService {
           });
         }
 
-        // 5. BNB 잔액 확인
         const bnbBalance = await this.tokenTransferService.getBnbBalance(
           wallet.address,
         );

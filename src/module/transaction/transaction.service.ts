@@ -19,7 +19,7 @@ export class TransactionService {
 
     const transactions = await this.transactionModel
       .find({ userId: user.id })
-      .sort({ createdAt: -1 }) // 최신순 정렬
+      .sort({ createdAt: -1 })
       .exec();
 
     return transactions;
@@ -37,11 +37,10 @@ export class TransactionService {
     await transaction.save();
   }
 
-  // 특정 트랜잭션 해시 존재 여부 확인
   async checkTransactionHashExists(transactionHash: string): Promise<boolean> {
     const existingTransaction = await this.transactionModel
       .findOne({ transactionHash })
       .exec();
-    return !!existingTransaction; // 존재하면 true, 없으면 false
+    return !!existingTransaction;
   }
 }

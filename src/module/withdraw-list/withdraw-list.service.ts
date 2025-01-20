@@ -12,6 +12,7 @@ import { GoogleOTPService } from '../google-otp/google-otp.service';
 import { UsersService } from 'src/module/users/users.service';
 import { PackageUsersService } from '../package-users/package-users.service';
 import { GetPendingWithdrawalsResponse } from './dto/get-pending-withdrawals-response.dto';
+import { checkAdminAccess, checkUserAuthentication } from '../../utils/utils';
 
 @Injectable()
 export class WithdrawListService {
@@ -29,17 +30,11 @@ export class WithdrawListService {
     offset: number,
     user: { id: string },
   ): Promise<GetPendingWithdrawalsResponse[]> {
-    const requestingUser = await this.usersService.isValidAdmin(user.id);
-
-    if (!requestingUser) {
-      throw new BadRequestException(
-        'Unauthorized: Access is restricted to admins only.',
-      );
-    }
+    await checkAdminAccess(this.usersService, user.id);
 
     const withdrawals = await this.withdrawListModel
-      .find({ status: 'pending' }) // "pending" 상태의 데이터 필터링
-      .sort({ createdAt: 1 }) // 최신순 정렬
+      .find({ status: 'pending' })
+      .sort({ createdAt: 1 })
       .skip(offset)
       .limit(limit)
       .exec();
@@ -66,12 +61,8 @@ export class WithdrawListService {
     return this.withdrawListModel.countDocuments({ status: 'pending' }).exec();
   }
 
-  // email을 파라미터로 받아서 Pending Withdrawals 처리
   async getPendingWithdrawals(email: string): Promise<WithdrawList[]> {
-    //console.log('getPendingWithdrawals - emil', email);
-    if (!email) {
-      throw new UnauthorizedException('Email not found in user context.');
-    }
+    checkUserAuthentication({ id: email });
 
     const pendingWithdrawals = await this.withdrawListModel
       .find({ email, status: 'pending' })
@@ -84,7 +75,6 @@ export class WithdrawListService {
     return pendingWithdrawals;
   }
 
-  // email을 파라미터로 받아서 출금 요청 처리
   async processWithdrawalRequest(
     userId: string,
     email: string,
@@ -92,22 +82,13 @@ export class WithdrawListService {
     amount: number,
     otp: string,
   ): Promise<boolean> {
-    if (!email) {
-      console.log('Email not found in user context.');
-      throw new UnauthorizedException('Email not found in user context.');
-    }
+    checkUserAuthentication({ id: email });
 
-    // OTP 검증
     const isValidOtp = await this.googleOtpService.verifyOnly({ email }, otp);
-    //console.log('isValidOtp', isValidOtp);
     if (!isValidOtp) {
-      console.log('Invalid OTP.');
       throw new UnauthorizedException('Invalid OTP.');
     }
 
-    //console.log('otp', otp);
-
-    // 지갑 자산 차감
     const walletUpdateResult = await this.deductFromWallet(
       userId,
       currency,
@@ -117,7 +98,6 @@ export class WithdrawListService {
       throw new BadRequestException('Failed to deduct balance from wallet.');
     }
 
-    // 출금 요청 DB에 저장
     const withdrawal = new this.withdrawListModel({
       userId,
       email,
@@ -130,18 +110,11 @@ export class WithdrawListService {
     return true;
   }
 
-  // 출금 승인 처리
   async approveWithdrawal(
     withdrawalId: string,
     email: string,
   ): Promise<boolean> {
-    const admin = await this.usersService.findUserByEmail(email);
-
-    if (!admin || (admin.userLevel !== 1 && admin.userLevel !== 2)) {
-      throw new UnauthorizedException(
-        'Only admin users can approve withdrawals.',
-      );
-    }
+    await checkAdminAccess(this.usersService, email);
 
     const withdrawal = await this.withdrawListModel.findById(withdrawalId);
     if (!withdrawal || withdrawal.status !== 'pending') {
@@ -156,18 +129,11 @@ export class WithdrawListService {
     return true;
   }
 
-  // 출금 거부 처리
   async rejectWithdrawal(
     withdrawalId: string,
     email: string,
   ): Promise<boolean> {
-    const admin = await this.usersService.findUserByEmail(email);
-
-    if (!admin || (admin.userLevel !== 1 && admin.userLevel !== 2)) {
-      throw new UnauthorizedException(
-        'Only admin users can reject withdrawals.',
-      );
-    }
+    await checkAdminAccess(this.usersService, email);
 
     const withdrawal = await this.withdrawListModel.findById(withdrawalId);
     if (!withdrawal || withdrawal.status !== 'pending') {
@@ -182,7 +148,6 @@ export class WithdrawListService {
     return true;
   }
 
-  // 지갑에서 금액 차감
   private async deductFromWallet(
     userId: string,
     currency: string,

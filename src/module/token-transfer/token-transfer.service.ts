@@ -44,15 +44,13 @@ export class TokenTransferService {
     const wallet = await this.walletsService.findWalletById(userId);
 
     if (!wallet) {
-      console.log('Wallet not found for the given user ID.');
       return false;
     }
 
     const walletId = wallet.id;
-    const privateKeys = this.loadPrivateKeys(); // 최신 privateKeys 동적 로드
+    const privateKeys = this.loadPrivateKeys();
 
     if (!(walletId in privateKeys)) {
-      console.log('Private key not found for the wallet. - ', walletId);
       return false;
     }
 
@@ -61,7 +59,6 @@ export class TokenTransferService {
     const usdtBalance = await this.getUsdtBalance(walletAddress);
 
     if (usdtBalance < totalPrice) {
-      console.log('Insufficient USDT balance.');
       return false;
     }
 
@@ -92,7 +89,6 @@ export class TokenTransferService {
     try {
       const balance = await this.provider.getBalance(address); // BNB 잔액 가져오기 (Wei 단위)
       const balanceInEther = parseFloat(ethers.formatEther(balance)); // Ether 단위로 변환
-      console.log(`[INFO] BNB Balance for ${address}: ${balanceInEther} BNB`);
       return balanceInEther;
     } catch (error) {
       console.error(
@@ -140,7 +136,7 @@ export class TokenTransferService {
       throw new BadRequestException('Wallet not found for the given user ID.');
     }
 
-    const privateKeys = this.loadPrivateKeys(); // 최신 privateKeys 동적 로드
+    const privateKeys = this.loadPrivateKeys();
 
     if (!privateKeys[walletId]) {
       throw new BadRequestException('Company wallet private key not found.');
@@ -157,9 +153,6 @@ export class TokenTransferService {
         value: amountInWei,
       });
       await tx.wait();
-      console.log(
-        `[INFO] Successfully transferred ${amount} BNB to ${toAddress}`,
-      );
       return true;
     } catch (error) {
       console.error('[ERROR] Failed to transfer BNB:', error);

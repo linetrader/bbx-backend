@@ -6,7 +6,7 @@ export class GetMiningCustomerResponse {
   id!: string;
 
   @Field()
-  username!: string; // username 필드 추가
+  username!: string;
 
   @Field()
   packageType!: string;

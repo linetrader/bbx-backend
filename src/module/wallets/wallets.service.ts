@@ -14,6 +14,7 @@ import { ethers } from 'ethers';
 import { Wallet, WalletsAdmin } from './wallets.schema';
 import { GoogleOTPService } from 'src/module/google-otp/google-otp.service';
 import { UsersService } from '../users/users.service';
+import { checkAdminAccess, checkUserAuthentication } from '../../utils/utils';
 
 @Injectable()
 export class WalletsService implements OnModuleInit {
@@ -32,7 +33,6 @@ export class WalletsService implements OnModuleInit {
     try {
       console.log('[INFO] Checking for wallets without bnbBalance field...');
 
-      // bnbBalance 필드가 없는 문서를 검색
       const walletsToUpdate = await this.walletModel
         .find({ bnbBalance: { $exists: false } })
         .exec();
@@ -41,7 +41,6 @@ export class WalletsService implements OnModuleInit {
         `[INFO] Found ${walletsToUpdate.length} wallets without bnbBalance.`,
       );
 
-      // 필드 추가 및 기본값 설정
       for (const wallet of walletsToUpdate) {
         wallet.bnbBalance = 0.0;
         await wallet.save();
@@ -77,9 +76,7 @@ export class WalletsService implements OnModuleInit {
 
   async findWalletById(userId: string): Promise<Wallet | null> {
     try {
-      //console.log('findWalletById - userId:', userId);
       const wallet = await this.walletModel.findOne({ userId }).exec();
-      //console.log('findWalletById - wallet:', wallet);
       return wallet;
     } catch (error) {
       console.error('Error in findWalletById:', error);
@@ -89,9 +86,7 @@ export class WalletsService implements OnModuleInit {
 
   async findWalletIdByAddress(address: string): Promise<string | null> {
     try {
-      //console.log('findWalletIdByAddress - address:', address);
       const wallet = await this.walletModel.findOne({ address }).exec();
-      //console.log('findWalletIdByAddress - wallet:', wallet);
       return wallet?.id;
     } catch (error) {
       console.error('Error in findWalletById:', error);
@@ -104,22 +99,16 @@ export class WalletsService implements OnModuleInit {
     newAddress: string,
     otp: string,
   ): Promise<boolean> {
-    //console.log('[DEBUG] saveWithdrawAddress called');
-    //console.log('[DEBUG] Input user:', user);
-    //console.log('[DEBUG] Input newAddress:', newAddress);
-    //console.log('[DEBUG] Input otp:', otp);
+    checkUserAuthentication(user);
 
     if (!user || !user.id || !user.email) {
-      console.error('[ERROR] User not found or invalid user object');
       throw new BadRequestException('User not found.');
     }
 
     try {
       const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
-      //console.log('[DEBUG] Retrieved wallet:', wallet);
 
       if (!wallet) {
-        console.warn(`[WARNING] No wallet found for user ${user.id}`);
         throw new BadRequestException(
           'Wallet not found. Please create a wallet.',
         );
@@ -129,23 +118,19 @@ export class WalletsService implements OnModuleInit {
         { email: user.email },
         otp,
       );
-      //console.log('[DEBUG] OTP validation result:', isValidOtp);
 
       if (!isValidOtp) {
-        console.error('[ERROR] Invalid OTP provided');
         throw new UnauthorizedException('Invalid OTP.');
       }
 
       wallet.whithdrawAddress = newAddress;
-      //console.log('[DEBUG] Updated wallet withdrawAddress:',wallet.whithdrawAddress,);
 
       await wallet.save();
-      //console.log('[DEBUG] Wallet saved successfully');
 
       return true;
     } catch (error) {
       console.error('[ERROR] saveWithdrawAddress failed:', error);
-      throw error; // Re-throw the error to ensure it propagates correctly
+      throw error;
     }
   }
 
@@ -159,11 +144,11 @@ export class WalletsService implements OnModuleInit {
   }
 
   async getWalletInfo(user: { id: string }): Promise<Wallet> {
+    checkUserAuthentication(user);
+
     if (!user || !user.id) {
       throw new UnauthorizedException('User is not authenticated');
     }
-
-    //console.log('getWalletInfo - ', user.id);
 
     const wallet = await this.walletModel.findOne({ userId: user.id }).exec();
 
@@ -176,10 +161,7 @@ export class WalletsService implements OnModuleInit {
   }
 
   async createWallet(user: { id: string }): Promise<Wallet> {
-    //console.log('[DEBUG] createWallet called with user:', user);
-
     if (!user || !user.id) {
-      console.error('[ERROR] User is not authenticated');
       throw new UnauthorizedException('User is not authenticated');
     }
 
@@ -187,25 +169,20 @@ export class WalletsService implements OnModuleInit {
       .findOne({ userId: user.id })
       .exec();
     if (existingWallet) {
-      //console.log(`[DEBUG] Wallet already exists for user ${user.id}`);
       return existingWallet;
     }
-
-    //console.log('[DEBUG] Creating new wallet');
 
     const wallet = ethers.Wallet.createRandom();
     const newWallet = await this.walletModel.create({
       address: wallet.address,
-      whithdrawAddress: '0x', // 명시적으로 기본값 제공
+      whithdrawAddress: '0x',
       userId: user.id,
       bnbBalance: 0.0,
       usdtBalance: 0.0,
     });
 
-    //console.log('[DEBUG] Saving private key');
     this.savePrivateKeyToFile(String(newWallet._id), wallet.privateKey);
 
-    //console.log('[DEBUG] Wallet created successfully:', newWallet);
     return newWallet;
   }
 
@@ -215,6 +192,8 @@ export class WalletsService implements OnModuleInit {
     offset: number,
     user: { id: string },
   ): Promise<{ data: WalletsAdmin[]; totalWallets: number }> {
+    await checkAdminAccess(this.usersService, user.id);
+
     // 1. 요청 사용자가 어드민인지 확인
     const requestingUser = await this.usersService.isValidAdmin(user.id);
     if (!requestingUser) {
@@ -305,9 +284,7 @@ export class WalletsService implements OnModuleInit {
 
   async updateUsdtBalance(username: string, profit: number): Promise<boolean> {
     const userId = await this.usersService.findUserIdByUsername(username);
-    //console.log('updateUsdtBalance - userId', userId);
     const wallet = await this.findWalletById(userId);
-    //console.log('updateUsdtBalance - profit', profit);
     if (wallet) {
       wallet.usdtBalance += profit;
       wallet.save();

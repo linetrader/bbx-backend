@@ -29,7 +29,6 @@ export class ReferrerUsersService {
     return this.referrerUsersModel.find({ adminId }).exec();
   }
 
-  // 보상 유저 가져오기
   async getReferrerUsers(adminId: string): Promise<ReferrerUser[]> {
     if (!adminId) {
       throw new BadRequestException('Not User');
@@ -41,7 +40,6 @@ export class ReferrerUsersService {
     return this.referrerUsersModel.find().exec();
   }
 
-  // 보상 유저 등록
   async addReferrerUser(
     adminId: string,
     userName: string,
@@ -56,16 +54,12 @@ export class ReferrerUsersService {
       throw new BadRequestException('Not Super Admin');
     }
 
-    //const userId = this.usersService.findUserIdByUsername(userName);
-
-    // 유효성 검사
     if (feeRate < 0 || feeRate > 100) {
       throw new BadRequestException(
         'Invalid fee rate. Must be between 0 and 100.',
       );
     }
 
-    // 이미 등록된 유저인지 확인
     const existingUser = await this.referrerUsersModel.findOne({
       userName,
       packageType,
@@ -76,7 +70,6 @@ export class ReferrerUsersService {
       );
     }
 
-    // 새로운 유저 등록
     const referrerUser = new this.referrerUsersModel({
       userName,
       referrerUserName,
@@ -87,16 +80,11 @@ export class ReferrerUsersService {
     return referrerUser.save();
   }
 
-  // 보상 유저 검색
   async findReferrerByUserName(
     userName: string,
     packageType: string,
   ): Promise<ReferrerUser | null> {
-    const refferrer = await this.referrerUsersModel
-      .findOne({ userName, packageType })
-      .exec();
-    if (!refferrer) return null;
-    return refferrer;
+    return this.referrerUsersModel.findOne({ userName, packageType }).exec();
   }
 
   async getGroupLeaderName(
@@ -106,9 +94,7 @@ export class ReferrerUsersService {
     const refferrer = await this.referrerUsersModel
       .findOne({ userName, packageType })
       .exec();
-    if (!refferrer) return null;
-
-    return refferrer.groupLeaderName;
+    return refferrer?.groupLeaderName || null;
   }
 
   async calculateReferralRewards(
@@ -120,17 +106,15 @@ export class ReferrerUsersService {
 
     while (true) {
       if (!currentUserName) {
-        break; // 상위 추천인이 없으면 루프 종료
+        break;
       }
 
-      // 1. username을 보상 유저에서 검색
       const referrer = await this.findReferrerByUserName(
         currentUserName,
         packageType,
       );
 
       if (!referrer) {
-        // 추천인을 찾을 수 없으면 다음 상위 추천인으로 이동
         currentUserName =
           await this.usersService.findMyReferrer(currentUserName);
         continue;
@@ -138,13 +122,10 @@ export class ReferrerUsersService {
 
       const { groupLeaderName, feeRateLeader, feeRate } = referrer;
 
-      // 2. feeRate를 사용해 profit 계산 및 username 보상 처리
       if (feeRate > 0) {
         const profit = totalPrice * (feeRate / 100);
         if (profit > 0) {
           await this.walletsService.updateUsdtBalance(currentUserName, profit);
-
-          // 3. 수익 로그 기록
           await this.referrerLogsService.createReferralLog(
             groupLeaderName,
             currentUserName,
@@ -155,7 +136,6 @@ export class ReferrerUsersService {
         }
       }
 
-      // 4. feeRateLeader를 사용해 groupLeaderName 보상 처리
       if (feeRateLeader > 0 && groupLeaderName) {
         const leaderProfit = totalPrice * (feeRateLeader / 100);
         if (leaderProfit > 0) {
@@ -163,21 +143,16 @@ export class ReferrerUsersService {
             groupLeaderName,
             leaderProfit,
           );
-
-          // 수익 로그 기록
           await this.referrerLogsService.createReferralLog(
             groupLeaderName,
             groupLeaderName,
-            username, // 현재 추천인을 referrer로 설정
+            username,
             packageType,
             leaderProfit,
           );
         }
       }
 
-      // 5. 다음 상위 추천인으로 이동
-      //currentUserName = await this.usersService.findMyReferrer(currentUserName);
-      // 한번 수행하고 벗어남.
       break;
     }
   }
@@ -191,13 +166,6 @@ export class ReferrerUsersService {
     feeRate: number,
   ): Promise<ReferrerUser> {
     try {
-      console.log('addMiningGroup - groupLeaderName', groupLeaderName);
-      console.log('addMiningGroup - userName', userName);
-      console.log('addMiningGroup - packageType', packageType);
-      console.log('addMiningGroup - feeRateLeader', feeRateLeader);
-      console.log('addMiningGroup - feeRate', feeRate);
-
-      // 1. 어드민 권한 확인
       if (!adminId) {
         throw new BadRequestException('Not User');
       }
@@ -205,7 +173,6 @@ export class ReferrerUsersService {
         throw new BadRequestException('Not Super Admin');
       }
 
-      // 2. feeRate 유효성 검사
       if (feeRateLeader < 0 || feeRateLeader > 100) {
         throw new BadRequestException(
           'Invalid fee rate. Must be between 0 and 100.',
@@ -218,7 +185,6 @@ export class ReferrerUsersService {
         );
       }
 
-      //if ()
       const referrerUser = await this.referrerUsersModel
         .findOne({ userName })
         .exec();
@@ -237,89 +203,10 @@ export class ReferrerUsersService {
 
       await newReferrerUser.save();
 
-      // 6. 생성된 문서 배열 반환
       return newReferrerUser;
     } catch (error) {
       console.error('[ERROR] Failed to add mining group:', error);
       throw new BadRequestException('Failed to add mining group.');
     }
   }
-  // async addMiningGroup(
-  //   adminId: string,
-  //   groupLeaderName: string,
-  //   packageType: string,
-  //   feeRate: number,
-  // ): Promise<ReferrerUser[]> {
-  //   try {
-  //     // 1. 어드민 권한 확인
-  //     if (!adminId) {
-  //       throw new BadRequestException('Not User');
-  //     }
-  //     if (!this.usersService.isValidSuperUser(adminId)) {
-  //       throw new BadRequestException('Not Super Admin');
-  //     }
-
-  //     // 2. feeRate 유효성 검사
-  //     if (feeRate < 0 || feeRate > 100) {
-  //       throw new BadRequestException(
-  //         'Invalid fee rate. Must be between 0 and 100.',
-  //       );
-  //     }
-
-  //     // 3. 그룹장의 ID 가져오기
-  //     const groupLeaderId =
-  //       await this.usersService.findUserIdByUsername(groupLeaderName);
-  //     if (!groupLeaderId) {
-  //       throw new BadRequestException('Invalid group leader name.');
-  //     }
-
-  //     //console.log('addMiningGroup - groupLeaderName', groupLeaderName);
-
-  //     // 4. 그룹장 산하의 유저 ID 들을 가져오기
-  //     const userIds =
-  //       await this.usersService.getUserIdsUnderMyNetwork(groupLeaderId);
-
-  //     //console.log('addMiningGroup - userIds', userIds);
-
-  //     if (!userIds || userIds.length === 0) {
-  //       throw new BadRequestException(
-  //         `No users found under the group leader: ${groupLeaderName}`,
-  //       );
-  //     }
-
-  //     // 5. ReferrerUser 문서 생성
-  //     const referrerUsers: ReferrerUser[] = [];
-
-  //     for (const userId of userIds) {
-  //       const userName = await this.usersService.getUserName(userId);
-  //       //console.log('addMiningGroup - userName', userName);
-  //       if (!userName) continue;
-  //       const referrerUserName =
-  //         await this.usersService.findMyReferrer(userName);
-  //       if (!referrerUserName) continue;
-  //       const referrerUserId =
-  //         await this.usersService.findUserIdByUsername(referrerUserName);
-
-  //       const newReferrerUser = new this.referrerUsersModel({
-  //         groupLeaderId,
-  //         groupLeaderName,
-  //         userId,
-  //         userName: userName || 'Unknown',
-  //         referrerUserId: referrerUserId,
-  //         referrerUserName: referrerUserName || 'Unknown',
-  //         packageType,
-  //         feeRate: 0.0,
-  //       });
-
-  //       const savedReferrerUser = await newReferrerUser.save();
-  //       referrerUsers.push(savedReferrerUser);
-  //     }
-
-  //     // 6. 생성된 문서 배열 반환
-  //     return referrerUsers;
-  //   } catch (error) {
-  //     console.error('[ERROR] Failed to add mining group:', error);
-  //     throw new BadRequestException('Failed to add mining group.');
-  //   }
-  // }
 }

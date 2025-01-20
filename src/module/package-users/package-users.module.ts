@@ -8,7 +8,7 @@ import { PackageUsersService } from './package-users.service';
 import { PackageModule } from '../package/package.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import { ContractsModule } from '../contracts/contracts.module';
-import { MiningLogsModule } from '../mining-logs/mining-logs.module'; // Import MiningLogsModule
+import { MiningLogsModule } from '../mining-logs/mining-logs.module';
 import { UsersModule } from '../users/users.module';
 import { TokenTransferModule } from '../token-transfer/token-transfer.module';
 import { ReferrerUsersModule } from '../referrer-users/referrer-users.module';
@@ -29,6 +29,6 @@ import { CoinPriceModule } from '../coin-price/coin-price.module';
     CoinPriceModule,
   ],
   providers: [PackageUsersResolver, PackageUsersService],
-  exports: [PackageUsersService], // MongooseModule을 exports에 추가
+  exports: [PackageUsersService],
 })
 export class PackageUsersModule {}

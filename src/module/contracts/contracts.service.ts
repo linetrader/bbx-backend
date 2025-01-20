@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -13,6 +12,7 @@ import { DefaultContract } from './contracts.default.schema';
 import { Contract, CreateContractInput } from './contracts.schema';
 import { UsersService } from '../users/users.service';
 import { GetPendingContractsResponse } from './dto/get-pending-contracts-response.dto';
+import { checkAdminAccess, checkUserAuthentication } from '../../utils/utils';
 
 @Injectable()
 export class ContractsService implements OnModuleInit {
@@ -21,28 +21,22 @@ export class ContractsService implements OnModuleInit {
     private readonly defaultContractModel: Model<DefaultContract>,
     @InjectModel(Contract.name)
     private readonly contractModel: Model<Contract>,
-    private readonly usersService: UsersService, // 유저 서비스 추가
+    private readonly usersService: UsersService,
   ) {}
 
-  // 모듈 초기화 시 호출
   async onModuleInit() {
-    //await this.initializeDefaultContract();
-    //await this.updateMissingStatusFields();
+    // 초기화 로직이 주석 처리되어 있음
+    this.initializeDefaultContract();
   }
 
   async confirmContract(contractId: string): Promise<boolean> {
-    // 2. 계약서 가져오기.
     const contractUser = await this.contractModel.findById(contractId).exec();
     if (!contractUser) {
-      //throw new BadRequestException('계약서가 없습니다.');
       return false;
     }
 
-    // 3. 계약 상태 승인으로 바꾸고 저장.
     contractUser.status = 'approved';
-    contractUser.save();
-
-    // 4. 유저의 밸런스 업데이트.
+    await contractUser.save();
 
     return true;
   }
@@ -52,7 +46,6 @@ export class ContractsService implements OnModuleInit {
     if (!defaultContract) {
       throw new NotFoundException('Default contract information not found');
     }
-    //console.log(defaultContract);
     return defaultContract;
   }
 
@@ -61,17 +54,11 @@ export class ContractsService implements OnModuleInit {
     offset: number,
     user: { id: string },
   ): Promise<GetPendingContractsResponse[]> {
-    const requestingUser = await this.usersService.isValidAdmin(user.id);
-
-    if (!requestingUser) {
-      throw new BadRequestException(
-        'Unauthorized: Access is restricted to admins only.',
-      );
-    }
+    await checkAdminAccess(this.usersService, user.id);
 
     const contracts = await this.contractModel
       .find({ status: 'pending' })
-      .sort({ createdAt: 1 }) // 최신순 정렬
+      .sort({ createdAt: 1 })
       .skip(offset)
       .limit(limit)
       .exec();
@@ -102,18 +89,15 @@ export class ContractsService implements OnModuleInit {
       const defaultContract = await this.getDefaultContract();
       const currentDate = new Date().toISOString().split('T')[0];
 
-      // 유저랑 회사의 계약 컨펌 DB 에 저장
       const newContract = new this.contractModel({
         ...input,
-        content: defaultContract.content, // 계약내용 저장
+        content: defaultContract.content,
         date: currentDate,
         companyName: defaultContract.companyName,
         companyAddress: defaultContract.companyAddress,
         businessNumber: defaultContract.businessNumber,
         representative: defaultContract.representative,
       });
-
-      //console.log(newContract);
 
       await newContract.save();
       return true;
@@ -123,39 +107,30 @@ export class ContractsService implements OnModuleInit {
     }
   }
 
-  // 특정 사용자 구매 기록 조회
   async getPackageRecordsByUser(
     user: { id: string },
     status: string,
   ): Promise<Contract[]> {
-    try {
-      if (!user || !user.id) {
-        throw new UnauthorizedException('User not authenticated');
-      }
+    checkUserAuthentication(user);
 
-      const userId = user.id;
+    const userId = user.id;
 
-      const packages = await this.contractModel
-        .find({ userId, status }) // userId와 status로 필터링
-        .sort({ createdAt: -1 }) // 최신순 정렬
-        .exec();
+    const packages = await this.contractModel
+      .find({ userId, status })
+      .sort({ createdAt: -1 })
+      .exec();
 
-      if (!packages || packages.length === 0) {
-        console.log(`No packages found for status: ${status}`);
-        throw new BadRequestException('Packages not found.');
-      }
-
-      return packages;
-    } catch (error) {
-      const err = error as Error;
-      throw new BadRequestException(err.message);
+    if (!packages.length) {
+      throw new BadRequestException('Packages not found.');
     }
+
+    return packages;
   }
 
   private async updateMissingStatusFields(): Promise<void> {
     try {
       const packagesWithoutStatus = await this.contractModel
-        .find({ status: { $exists: false } }) // status 필드가 없는 데이터 검색
+        .find({ status: { $exists: false } })
         .exec();
 
       if (packagesWithoutStatus.length > 0) {
@@ -164,7 +139,7 @@ export class ContractsService implements OnModuleInit {
         );
 
         for (const pkg of packagesWithoutStatus) {
-          pkg.status = 'approved'; // 기본값 설정
+          pkg.status = 'approved';
           await pkg.save();
         }
 
@@ -184,7 +159,7 @@ export class ContractsService implements OnModuleInit {
 도지 채굴기 위탁관리 계약서
 `,
           `
-주식회사 니아코퍼레이션 대표이사 윤정훈(이하 “갑이라 함)과 _____________(이하 “을”이라 함)는 아래와 같이 도지 채굴기에 대한 위탁 관리 계약을 체결한다.
+주식회사 부스트엑스 대표이사 장준태(이하 “갑이라 함)과 _____________(이하 “을”이라 함)는 아래와 같이 도지 채굴기에 대한 위탁 관리 계약을 체결한다.
 `,
           `
 제1조 목적
@@ -225,11 +200,10 @@ export class ContractsService implements OnModuleInit {
 본 계약과 관련하여 분쟁이 발생하는 경우 “갑”의 주소지의 관할법원에서 해결하기로 한다.
 `,
         ],
-        companyName: 'NiA Corporation Co., Ltd.',
-        companyAddress:
-          '18, Teheran-ro 20-gil, Gangnam-gu, Seoul, Republic of Korea',
-        businessNumber: '765-87-02260',
-        representative: 'YunJungHoon',
+        companyName: 'BoostX Inc.',
+        companyAddress: '',
+        businessNumber: '',
+        representative: 'Jang Juntae',
       });
       return defaultContract.save();
     }

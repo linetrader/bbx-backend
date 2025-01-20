@@ -6,7 +6,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-//import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
@@ -18,11 +17,10 @@ export class GoogleOTPService {
   constructor(
     @InjectModel(GoogleOTP.name)
     private readonly googleOTPModel: Model<GoogleOTP>,
-    //private readonly jwtService: JwtService,
   ) {}
 
   async getOtpInfo(user: { email: string }): Promise<GoogleOTP | null> {
-    if (!user || !user.email) {
+    if (!user?.email) {
       throw new UnauthorizedException('User email is missing.');
     }
 
@@ -30,7 +28,6 @@ export class GoogleOTPService {
       .findOne({ email: user.email })
       .exec();
 
-    // 데이터가 없을 경우 기본 데이터 생성
     if (!otpInfo) {
       otpInfo = new this.googleOTPModel({
         email: user.email,
@@ -50,7 +47,6 @@ export class GoogleOTPService {
       );
     }
     if (secretKey.length !== 64) {
-      // 32바이트 16진수 문자열 = 64문자
       throw new BadRequestException(
         'OTP_SECRET_KEY must be a 32-byte hex string.',
       );
@@ -119,7 +115,7 @@ export class GoogleOTPService {
         });
       } else {
         otpRecord.otpSecret = this.encrypt(secret);
-        otpRecord.isOtpEnabled = false; // OTP 활성화는 verify 이후에 설정됨
+        otpRecord.isOtpEnabled = false;
       }
 
       await otpRecord.save();

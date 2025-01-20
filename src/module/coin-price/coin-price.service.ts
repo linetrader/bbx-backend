@@ -12,7 +12,6 @@ export class CoinPriceService {
   ) {}
 
   async fetchCoinPrice(coinName: string, language: string): Promise<number> {
-    // 언어에 따른 통화 매핑
     const currencyMap: Record<string, string> = {
       en: 'USDT',
       ja: 'JPY',
@@ -22,20 +21,13 @@ export class CoinPriceService {
 
     const currency = currencyMap[language];
     if (!currency) {
-      //throw new HttpException('Invalid language', HttpStatus.BAD_REQUEST);
       throw new BadRequestException('Invalid language');
     }
 
     try {
-      // API 호출
       const response = await axios.get(
         `https://min-api.cryptocompare.com/data/price?fsym=${coinName}&tsyms=${currency}`,
       );
-
-      //console.log('fetchCoinPrice - language', language);
-      //console.log('fetchCoinPrice - coinName', coinName);
-      //console.log('fetchCoinPrice - currency', currency);
-      //console.log('fetchCoinPrice - price', response.data[currency]);
 
       return response.data[currency] || 0;
     } catch (error) {
@@ -50,25 +42,18 @@ export class CoinPriceService {
   async saveCoinPrice(coinName: string, language: string): Promise<CoinPrice> {
     const price = await this.fetchCoinPrice(coinName, language);
 
-    // 기존 문서를 찾고 업데이트. 없으면 새로 생성하지 않음.
     const existingCoinPrice = await this.coinPriceModel.findOne({
       coinName,
       language,
     });
 
-    //console.log('saveCoinPrice - ', existingCoinPrice);
-
     if (existingCoinPrice) {
-      //console.log('saveCoinPrice 업데이트 - ');
-      // 기존 문서 업데이트
       if (price) {
         existingCoinPrice.price = price;
       }
-      existingCoinPrice.updatedAt = new Date(); // 타임스탬프 갱신
+      existingCoinPrice.updatedAt = new Date();
       return existingCoinPrice.save();
     } else {
-      //console.log('saveCoinPrice 생성 - ');
-      // 새 문서 생성
       const coinPrice = new this.coinPriceModel({
         coinName,
         language,
@@ -79,18 +64,16 @@ export class CoinPriceService {
     }
   }
 
-  // **새로운 함수: 2개의 코인과 4개의 국가별 가격 저장**
   async saveAllCoinPrices(): Promise<CoinPrice[]> {
-    const coins = ['BTC', 'DOGE']; // 코인 목록
-    const languages = ['en', 'ja', 'ko', 'zh']; // 언어별 통화 매핑
+    const coins = ['BTC', 'DOGE'];
+    const languages = ['en', 'ja', 'ko', 'zh'];
 
     const savedPrices: CoinPrice[] = [];
 
     for (const coin of coins) {
       for (const language of languages) {
-        // 기존 데이터 업데이트 또는 없을 때 생성
         const savedPrice = await this.saveCoinPrice(coin, language);
-        savedPrices.push(savedPrice); // 결과 저장
+        savedPrices.push(savedPrice);
       }
     }
 
@@ -101,8 +84,6 @@ export class CoinPriceService {
     coinName: string,
     language: string,
   ): Promise<CoinPrice | null> {
-    //console.log('getCoinPrice - coinName', coinName);
-    //console.log('getCoinPrice - language', language);
     return this.coinPriceModel
       .findOne({ coinName, language })
       .sort({ createdAt: -1 });

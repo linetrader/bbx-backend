@@ -90,29 +90,22 @@ export class TotalMiningService implements OnModuleInit {
   }
 
   // 매 분마다 실행되는 작업
-  //@Cron('0 */1 * * *')
   async handleCron() {
     try {
-      //this.logger.debug('Cron job running based on CRON_EXPRESSION from .env');
-
-      // 쿠키가 없거나 만료된 경우 로그인 수행
       if (!this.cookies || !(await this.isCookieValid())) {
         this.logger.log('Cookies are missing or expired. Logging in...');
         await this.login('niabest@gmail.com', 'Hoon4621!@');
       }
 
-      // 마이닝 데이터 크롤링
       const quantity = await this.fetchActiveRigs();
       const miningProfit = await this.fetchMiningProfitability();
       this.logger.log(`Fetched Quantity Data: ${quantity}`);
       this.logger.log(`Fetched Mining Data: ${miningProfit}`);
 
-      // 기존 DB의 최신 miningProfit 가져오기
       const lastMiningRecord = await this.totalMiningModel
         .findOne({}, { miningProfit: 1 })
-        .sort({ createdAt: -1 }); // 가장 최근 다큐먼트를 가져옴
+        .sort({ createdAt: -1 });
 
-      // 변화가 없으면 저장하지 않음
       if (lastMiningRecord && lastMiningRecord.miningProfit === miningProfit) {
         this.logger.log('No change in miningProfit. Skipping save.');
         return;
@@ -123,7 +116,6 @@ export class TotalMiningService implements OnModuleInit {
           (miningProfit - lastMiningRecord.miningProfit).toFixed(6),
         );
 
-        // 변화가 있으면 새로운 다큐먼트 저장
         await this.saveMiningData(quantity, miningProfit, todayMiningProfit);
       }
     } catch (error) {

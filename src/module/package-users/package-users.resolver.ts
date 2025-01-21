@@ -24,20 +24,24 @@ export class PackageUsersResolver {
     }
 
     const offset = (page - 1) * limit;
+
+    // 마이닝 고객 데이터와 총 고객 수를 함께 반환
     const { data, totalCustomers } =
       await this.packageUsersService.getMiningCustomers(limit, offset, user);
 
     return { data, totalCustomers };
   }
 
+  // 3. 유저의 패키지 마이닝 수량 조회
   @Query(() => [PackageUsers])
   async getUserMiningData(
     @Context() context: any,
   ): Promise<PackageUsers[] | null> {
     const user = context.req.user;
-    return this.packageUsersService.getUserPackages(user);
+    return this.packageUsersService.getUserPackages(user); // 인증된 사용자 정보를 사용
   }
 
+  // 1. 패키지 구매
   @Mutation(() => String)
   async purchasePackage(
     @Args('packageId', { type: () => String }) packageId: string,
@@ -49,7 +53,7 @@ export class PackageUsersResolver {
   ): Promise<string> {
     const user = context.req.user;
     return this.packageUsersService.purchasePackage(
-      user,
+      user, // 인증된 사용자 정보를 전달
       packageId,
       quantity,
       customerName,

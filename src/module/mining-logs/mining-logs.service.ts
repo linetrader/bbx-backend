@@ -41,4 +41,69 @@ export class MiningLogsService {
       await newLog.save();
     }
   }
+
+  async getMiningLogsByDate(userId: string, date: Date): Promise<MiningLog[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    return this.miningLogModel
+      .find({
+        userId,
+        startTime: { $gte: startOfDay, $lte: endOfDay },
+      })
+      .exec();
+  }
+
+  async get24HourMiningProfit(userId: string): Promise<number> {
+    const now = new Date();
+    const startOf24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const logs = await this.miningLogModel
+      .find({
+        userId,
+        startTime: { $gte: startOf24Hours, $lte: now },
+      })
+      .exec();
+
+    return logs.reduce((total, log) => total + log.profit, 0);
+  }
+
+  async getAllMiningLogsGroupedByDay(
+    userId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ date: Date; profit: number; packageType: string }[]> {
+    const logs = await this.miningLogModel
+      .find({ userId })
+      .sort({ startTime: 1 })
+      .skip(offset)
+      .limit(limit)
+      .exec();
+
+    const groupedLogs = logs.reduce(
+      (
+        acc: {
+          [key: string]: { date: Date; profit: number; packageType: string };
+        },
+        log,
+      ) => {
+        const date = new Date(log.startTime);
+        date.setUTCHours(0, 0, 0, 0);
+        const dateString = date.toISOString();
+
+        if (!acc[dateString]) {
+          acc[dateString] = { date, profit: 0, packageType: log.packageType };
+        }
+
+        acc[dateString].profit += log.profit;
+        return acc;
+      },
+      {},
+    );
+
+    return Object.values(groupedLogs);
+  }
 }

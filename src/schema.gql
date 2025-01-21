@@ -131,6 +131,28 @@ type DefaultContractTemplate {
   representative: String!
 }
 
+type MiningLog {
+  id: ID!
+  userId: String!
+  packageType: String!
+  profit: Float!
+  startTime: DateTime!
+  endTime: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type MiningLogGroupedByDay {
+  packageType: String!
+  date: DateTime!
+  profit: Float!
+}
+
 type Package {
   id: ID!
   name: String!
@@ -231,7 +253,7 @@ type Query {
   getWalletsAdmin(limit: Int! = 10, page: Int! = 1): GetAdminWalletsResponse!
 
   """Fetch all transactions for the user"""
-  getTransactionList: [Transaction!]!
+  getTransactionList(type: String): [Transaction!]!
   getOtpInfo: GoogleOTP!
   getPackages: [Package!]!
   getPackagesAdmin: [Package!]!
@@ -244,6 +266,9 @@ type Query {
 
   """Fetch all contracts for the user with an optional status filter"""
   getPackageRecords(status: String! = "approved"): [Contract!]!
+  getMiningLogsByDate(date: DateTime!): [MiningLog!]!
+  get24HourMiningProfit: Float!
+  getAllMiningLogsGroupedByDay(limit: Int! = 10, offset: Int! = 0): [MiningLogGroupedByDay!]!
   getMiningGroup: [ReferrerUser!]!
   getReferrerUsers: [ReferrerUser!]!
   getReferralLogs: [ReferrerLog!]!

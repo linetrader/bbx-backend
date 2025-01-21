@@ -1,6 +1,6 @@
 // src/transaction/transaction.resolver.ts
 
-import { Resolver, Query, Context } from '@nestjs/graphql';
+import { Resolver, Query, Context, Args } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './transaction.schema';
 
@@ -12,8 +12,11 @@ export class TransactionResolver {
   @Query(() => [Transaction], {
     description: 'Fetch all transactions for the user',
   })
-  async getTransactionList(@Context() context: any): Promise<Transaction[]> {
+  async getTransactionList(
+    @Context() context: any,
+    @Args('type', { type: () => String, nullable: true }) type?: string,
+  ): Promise<Transaction[]> {
     const user = context.req.user; // 인증된 사용자 정보
-    return await this.transactionService.getTransactionsByUser(user); // 인증된 사용자 정보 전달
+    return await this.transactionService.getTransactionsByUser(user, type); // 인증된 사용자 정보 전달
   }
 }

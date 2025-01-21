@@ -16,14 +16,8 @@ import { UsersModule } from '../users/users.module';
     TransactionModule,
     GoogleOTPModule,
     UsersModule,
-    //BscScanModule, // BscScanModule 추가
   ],
-  providers: [
-    WalletsService,
-    WalletsResolver,
-    WalletsGateway,
-    //MonitoringService,
-  ],
-  exports: [WalletsService], // WalletModel 내보내기
+  providers: [WalletsService, WalletsResolver, WalletsGateway],
+  exports: [WalletsService],
 })
 export class WalletsModule {}

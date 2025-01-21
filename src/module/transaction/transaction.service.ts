@@ -12,13 +12,21 @@ export class TransactionService {
     private readonly transactionModel: Model<Transaction>,
   ) {}
 
-  async getTransactionsByUser(user: { id: string }): Promise<Transaction[]> {
+  async getTransactionsByUser(
+    user: { id: string },
+    type?: string,
+  ): Promise<Transaction[]> {
     if (!user || !user.id) {
       throw new UnauthorizedException('User not authenticated');
     }
 
+    const query: { userId: string; type?: string } = { userId: user.id };
+    if (type) {
+      query['type'] = type;
+    }
+
     const transactions = await this.transactionModel
-      .find({ userId: user.id })
+      .find(query)
       .sort({ createdAt: -1 })
       .exec();
 

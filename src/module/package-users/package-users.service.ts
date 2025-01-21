@@ -92,9 +92,16 @@ export class PackageUsersService implements OnModuleInit {
     offset: number,
     user: { id: string },
   ): Promise<{ data: GetMiningCustomerResponse[]; totalCustomers: number }> {
-    await checkAdminAccess(this.usersService, user.id);
+    const isSuperUser = await this.usersService.isValidSuperUser(user.id);
 
-    const userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
+    let userIds: string[];
+    if (isSuperUser) {
+      userIds = await this.usersService.getAllUserIds();
+    } else {
+      await checkAdminAccess(this.usersService, user.id);
+      userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
+    }
+
     const packageUsers = await this.packageUsersModel
       .find({ userId: { $in: userIds } })
       .sort({ createdAt: -1 })

@@ -29,7 +29,7 @@ export class WalletsService implements OnModuleInit {
     //await this.InitializeWallets();
   }
 
-  private async InitializeWallets() {
+  private async InitializeWallets(): Promise<void> {
     try {
       console.log('[INFO] Checking for wallets without bnbBalance field...');
 
@@ -186,7 +186,6 @@ export class WalletsService implements OnModuleInit {
     return newWallet;
   }
 
-  // 페이징 처리된 지갑 데이터 가져오기
   async getWalletsAdmin(
     limit: number,
     offset: number,
@@ -194,7 +193,6 @@ export class WalletsService implements OnModuleInit {
   ): Promise<{ data: WalletsAdmin[]; totalWallets: number }> {
     await checkAdminAccess(this.usersService, user.id);
 
-    // 1. 요청 사용자가 어드민인지 확인
     const requestingUser = await this.usersService.isValidAdmin(user.id);
     if (!requestingUser) {
       throw new BadRequestException(
@@ -202,10 +200,8 @@ export class WalletsService implements OnModuleInit {
       );
     }
 
-    // 2. 현재 사용자(user.id) 산하의 페이징된 userIds와 총 회원 수 가져오기
     const userIds = await this.usersService.getUserIdsUnderMyNetwork(user.id);
 
-    // 3. userIds를 기준으로 지갑 정보 검색
     const wallets = await this.walletModel
       .find({ userId: { $in: userIds } })
       .sort({ createdAt: -1 })
@@ -213,12 +209,10 @@ export class WalletsService implements OnModuleInit {
       .limit(limit)
       .exec();
 
-    // 4. 지갑 수량 계산
     const totalWallets = await this.walletModel
       .countDocuments({ userId: { $in: userIds } })
       .exec();
 
-    // 5. 지갑 데이터를 WalletsAdmin 형식으로 변환
     const data = await Promise.all(
       wallets.map(async (wallet) => {
         const username = await this.usersService.getUserName(wallet.userId);
@@ -235,42 +229,34 @@ export class WalletsService implements OnModuleInit {
       }),
     );
 
-    // 5. 반환
     return { data, totalWallets: totalWallets };
   }
 
-  /**
-   * Update wallet details service method
-   */
   async updateWalletDetails(
-    userId: string, // 사용자 ID
+    userId: string,
     walletId: string,
     updates: Partial<Wallet>,
   ): Promise<string> {
     try {
-      // 어드민 권한 확인
       const isAdmin = await this.usersService.isValidAdmin(userId);
       if (!isAdmin) {
         throw new UnauthorizedException('Unauthorized: Admin access only');
       }
 
-      // 월렛 검색
       const wallet = await this.walletModel.findById(walletId).exec();
       if (!wallet) {
         throw new BadRequestException('Wallet not found');
       }
 
-      // 업데이트 가능한 필드 정의
       const fieldsToUpdate: Array<keyof Wallet> = [
         'whithdrawAddress',
         'usdtBalance',
       ];
 
-      // 필드 업데이트 로직
       for (const field of fieldsToUpdate) {
         const value = updates[field];
         if (value !== undefined && value !== null) {
-          (wallet[field] as any) = value; // 타입 강제 캐스팅
+          (wallet[field] as any) = value;
         }
       }
 

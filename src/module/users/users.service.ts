@@ -23,32 +23,6 @@ export class UsersService implements OnModuleInit {
     // 초기화 로직이 주석 처리되어 있음
   }
 
-  async initializeReferrerField(): Promise<void> {
-    try {
-      const usersWithoutReferrer = await this.userModel
-        .find({ $or: [{ referrer: { $exists: false } }, { referrer: null }] })
-        .exec();
-
-      if (usersWithoutReferrer.length === 0) {
-        console.log('No users found without a referrer or with null referrer.');
-        return;
-      }
-
-      for (const user of usersWithoutReferrer) {
-        if (user.username !== 'linetrader') {
-          user.referrer = 'linetrader';
-          await user.save();
-          console.log(`User ${user.id} referrer set to 'linetrader'`);
-        }
-      }
-
-      console.log('Referrer field initialization complete.');
-    } catch (error) {
-      console.error('[ERROR] Failed to initialize referrer field:', error);
-      throw new BadRequestException('Failed to initialize referrer field');
-    }
-  }
-
   async findMyReferrerById(userId: string): Promise<string | null> {
     const user = await this.userModel.findById(userId).exec();
     return user?.referrer || null;
@@ -66,6 +40,7 @@ export class UsersService implements OnModuleInit {
 
   async isValidAdmin(userId: string): Promise<boolean> {
     const user = await this.userModel.findById(userId).exec();
+    //console.log('isValidAdmin user:', user);
     return user ? user.userLevel < 4 : false;
   }
 
@@ -89,6 +64,7 @@ export class UsersService implements OnModuleInit {
 
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
+      console.error('User not found for ID:', userId); // 추가된 로그
       throw new BadRequestException('Not user');
     }
     return user.username;
@@ -266,5 +242,10 @@ export class UsersService implements OnModuleInit {
       console.error('[ERROR] Failed to update user details:', error);
       throw new BadRequestException('Failed to update user details');
     }
+  }
+
+  async getAllUserIds(): Promise<string[]> {
+    const users = await this.userModel.find({}, '_id').exec();
+    return users.map((user) => user.id.toString());
   }
 }

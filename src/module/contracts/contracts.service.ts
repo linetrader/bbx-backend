@@ -63,19 +63,38 @@ export class ContractsService implements OnModuleInit {
       .limit(limit)
       .exec();
 
+    // 추가된 로그
+    //console.log('getPendingContractsAdmin contracts:', contracts);
+
     return Promise.all(
       contracts.map(async (contract) => {
-        const username = await this.usersService.getUserName(contract.userId);
-
-        return {
-          id: contract.id,
-          username: username || 'Unknown',
-          packageName: contract.packageName,
-          quantity: contract.quantity,
-          totalPrice: contract.totalPrice,
-          createdAt: contract.createdAt,
-          updatedAt: contract.updatedAt,
-        };
+        try {
+          const username = await this.usersService.getUserName(contract.userId);
+          return {
+            id: contract.id,
+            username: username || 'Unknown',
+            packageName: contract.packageName,
+            quantity: contract.quantity,
+            totalPrice: contract.totalPrice,
+            createdAt: contract.createdAt,
+            updatedAt: contract.updatedAt,
+          };
+        } catch (error) {
+          console.error(
+            'Error fetching username for contract:',
+            contract.id,
+            error,
+          );
+          return {
+            id: contract.id,
+            username: 'Unknown',
+            packageName: contract.packageName,
+            quantity: contract.quantity,
+            totalPrice: contract.totalPrice,
+            createdAt: contract.createdAt,
+            updatedAt: contract.updatedAt,
+          };
+        }
       }),
     );
   }
@@ -201,8 +220,8 @@ export class ContractsService implements OnModuleInit {
 `,
         ],
         companyName: 'BoostX Inc.',
-        companyAddress: '',
-        businessNumber: '',
+        companyAddress: '서울 강남구 신사동 525-14',
+        businessNumber: '02-512-4440',
         representative: 'Jang Juntae',
       });
       return defaultContract.save();

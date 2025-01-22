@@ -146,6 +146,10 @@ export class ContractsService implements OnModuleInit {
     return packages;
   }
 
+  async getApprovedContracts(): Promise<Contract[]> {
+    return this.contractModel.find({ status: 'approved' }).exec();
+  }
+
   private async updateMissingStatusFields(): Promise<void> {
     try {
       const packagesWithoutStatus = await this.contractModel

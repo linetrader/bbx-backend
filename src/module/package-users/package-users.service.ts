@@ -44,46 +44,39 @@ export class PackageUsersService implements OnModuleInit {
 
   async onModuleInit() {
     await this.initialMiningForAllPackages();
+    await this.initialPacakageUsers();
   }
 
   private async initialPacakageUsers(): Promise<void> {
-    try {
-      const packageUsersWithoutGroupLeader = await this.packageUsersModel
-        .find({ groupLeaderName: { $exists: false } })
-        .exec();
-
-      if (!packageUsersWithoutGroupLeader.length) {
-        console.log('No documents found without groupLeaderName.');
-        return;
-      }
-
-      for (const user of packageUsersWithoutGroupLeader) {
-        const userId = user.userId;
-        const userName = await this.usersService.getUserName(userId);
-        const groupLeaderName = await this.findMiningGroupLeaderName(
-          userName,
-          user.packageType,
-        );
-        const referrerUserName =
-          await this.usersService.findMyReferrerById(userId);
-
-        if (!referrerUserName || !groupLeaderName) {
-          console.warn(`Skipping userId: ${userId}.`);
-          continue;
-        }
-
-        user.referrerUserName = referrerUserName;
-        user.groupLeaderName = groupLeaderName;
-        await user.save();
-        console.log(
-          `Updated package user: ${userId} with groupLeaderName: ${groupLeaderName}`,
+    const approvedContracts =
+      await this.contractsService.getApprovedContracts();
+    // approvedContracts를 사용하여 필요한 로직을 추가합니다.
+    if (approvedContracts) {
+      for (const contract of approvedContracts) {
+        await this.updateUserPackage(
+          contract.userId,
+          contract.packageName,
+          contract.quantity,
         );
       }
+    }
 
-      console.log('Initial package users update completed.');
-    } catch (error) {
-      console.error('[ERROR] Failed to initialize package users:', error);
-      throw new BadRequestException('Failed to initialize package users.');
+    const packageUsers = await this.packageUsersModel.find().exec();
+    for (const packageUser of packageUsers) {
+      const userContracts = approvedContracts.filter(
+        (contract) =>
+          contract.userId === packageUser.userId &&
+          contract.packageName === packageUser.packageType,
+      );
+      const totalContractQuantity = userContracts.reduce(
+        (sum, contract) => sum + contract.quantity,
+        0,
+      );
+
+      if (packageUser.quantity !== totalContractQuantity) {
+        packageUser.quantity = totalContractQuantity;
+        await packageUser.save();
+      }
     }
   }
 
@@ -214,15 +207,31 @@ export class PackageUsersService implements OnModuleInit {
     packageName: string,
     quantity: number,
   ): Promise<void> {
-    const userPackage = await this.packageUsersModel.findOne({
+    let userPackage = await this.packageUsersModel.findOne({
       userId,
       packageType: packageName,
     });
+    const referrer =
+      (await this.usersService.findMyReferrerById(userId)) || 'linetrader';
+    const leaderName =
+      (await this.findMiningGroupLeaderName(referrer, packageName)) ||
+      'linetrader';
 
     if (userPackage) {
+      userPackage.groupLeaderName = leaderName;
+      userPackage.referrerUserName = referrer;
       userPackage.quantity += quantity;
-      await userPackage.save();
+    } else {
+      userPackage = new this.packageUsersModel({
+        userId,
+        groupLeaderName: leaderName,
+        referrerUserName: referrer,
+        packageType: packageName,
+        quantity: quantity,
+        miningBalance: 0.0,
+      });
     }
+    await userPackage.save();
   }
 
   private async findMiningGroupLeaderName(
@@ -354,31 +363,31 @@ export class PackageUsersService implements OnModuleInit {
         throw new BadRequestException('Failed to create contract.');
       }
 
-      const userPackage = await this.packageUsersModel.findOne({
-        userId: user.id,
-        packageType: selectedPackage.name,
-      });
+      // const userPackage = await this.packageUsersModel.findOne({
+      //   userId: user.id,
+      //   packageType: selectedPackage.name,
+      // });
 
-      if (!userPackage) {
-        const referrer = await this.usersService.findMyReferrerById(user.id);
-        if (!referrer) {
-          throw new BadRequestException('Not referrer');
-        }
-        const leaderName = await this.findMiningGroupLeaderName(
-          referrer,
-          selectedPackage.name,
-        );
-        const newUserPackage = new this.packageUsersModel({
-          userId: user.id,
-          groupLeaderName: leaderName,
-          referrerUserName: referrer,
-          walletId: myWallet.id,
-          packageType: selectedPackage.name,
-          quantity: 0.0,
-          miningBalance: 0.0,
-        });
-        await newUserPackage.save();
-      }
+      // if (!userPackage) {
+      //   const referrer = await this.usersService.findMyReferrerById(user.id);
+      //   if (!referrer) {
+      //     throw new BadRequestException('Not referrer');
+      //   }
+      //   const leaderName = await this.findMiningGroupLeaderName(
+      //     referrer,
+      //     selectedPackage.name,
+      //   );
+      //   const newUserPackage = new this.packageUsersModel({
+      //     userId: user.id,
+      //     groupLeaderName: leaderName,
+      //     referrerUserName: referrer,
+      //     walletId: myWallet.id,
+      //     packageType: selectedPackage.name,
+      //     quantity: 0.0,
+      //     miningBalance: 0.0,
+      //   });
+      //   await newUserPackage.save();
+      // }
 
       return `Successfully purchased ${quantity} of ${selectedPackage.name}.`;
     } catch (error) {

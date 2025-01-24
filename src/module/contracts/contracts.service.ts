@@ -13,6 +13,10 @@ import { Contract, CreateContractInput } from './contracts.schema';
 import { UsersService } from '../users/users.service';
 import { GetPendingContractsResponse } from './dto/get-pending-contracts-response.dto';
 import { checkAdminAccess, checkUserAuthentication } from '../../utils/utils';
+import * as fs from 'fs';
+import * as path from 'path';
+import PDFDocument from 'pdfkit';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class ContractsService implements OnModuleInit {
@@ -22,11 +26,13 @@ export class ContractsService implements OnModuleInit {
     @InjectModel(Contract.name)
     private readonly contractModel: Model<Contract>,
     private readonly usersService: UsersService,
+    private readonly mailerService: MailerService, // Add MailerService
   ) {}
 
   async onModuleInit() {
     // 초기화 로직이 주석 처리되어 있음
     this.initializeDefaultContract();
+    this.saveContractAsPdf('6789fd34dd6683e327811cca');
   }
 
   async confirmContract(contractId: string): Promise<boolean> {
@@ -231,5 +237,118 @@ export class ContractsService implements OnModuleInit {
       return defaultContract.save();
     }
     return exists;
+  }
+
+  async saveContractAsPdf(contractId: string): Promise<string> {
+    const contract = await this.contractModel.findById(contractId).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+
+    const pdfDir = path.join(__dirname, '../../../pdf');
+    if (!fs.existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir);
+    }
+
+    const pdfPath = path.join(pdfDir, `${contractId}.pdf`);
+    const doc = new PDFDocument();
+    doc.pipe(fs.createWriteStream(pdfPath));
+
+    // 한글 폰트 설정
+    const fontPath = path.join(__dirname, '../../../fonts/AritaBuriB.ttf');
+    if (fs.existsSync(fontPath)) {
+      doc.font(fontPath);
+    } else {
+      console.warn('Font file not found, using default font.');
+      doc.font('Helvetica'); // 기본 폰트로 설정
+    }
+
+    // 제목 설정
+    doc.fontSize(20).text(contract.content[0], { align: 'center' });
+    doc.moveDown();
+
+    // 계약 내용 설정
+    for (let i = 1; i < contract.content.length; i++) {
+      doc.fontSize(12).text(contract.content[i]);
+      doc.moveDown();
+    }
+
+    // 날짜 설정
+    const currentDate = new Date().toISOString().split('T')[0];
+    doc.fontSize(12).text(currentDate, { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Package Name: ${contract.packageName}`);
+    doc.text(`Quantity: ${contract.quantity}`);
+    doc.text(`Total Price: ${contract.totalPrice}`);
+    doc.moveDown();
+    doc.moveDown();
+    doc.text(`Customer Name: ${contract.customerName}`);
+    doc.text(`Customer Phone: ${contract.customerPhone}`);
+    doc.text(`Customer Address: ${contract.customerAddress}`);
+    doc.moveDown();
+    doc.moveDown();
+    doc.text(`Company Name: ${contract.companyName}`);
+    doc.text(`Company Address: ${contract.companyAddress}`);
+    doc.text(`Business Number: ${contract.businessNumber}`);
+    doc.text(`Representative: ${contract.representative}`);
+
+    doc.end();
+
+    return new Promise((resolve, reject) => {
+      doc.on('finish', () => resolve(pdfPath));
+      doc.on('error', reject);
+    });
+  }
+
+  async sendContractByEmail(contractId: string, email: string): Promise<void> {
+    const pdfPath = await this.saveContractAsPdf(contractId);
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Your Contract',
+      text: 'Please find attached your contract.',
+      attachments: [
+        {
+          filename: `${contractId}.pdf`,
+          path: pdfPath,
+        },
+      ],
+    });
+
+    // Delete the PDF file after sending the email
+    fs.unlinkSync(pdfPath);
+  }
+
+  async saveContractToFile(contractId: string): Promise<string> {
+    const contract = await this.contractModel.findById(contractId).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+
+    const fileDir = path.join(__dirname, '../../../../pdfs');
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir);
+    }
+
+    const filePath = path.join(fileDir, `${contractId}.txt`);
+    const content = `
+      Contract
+      Customer Name: ${contract.customerName}
+      Customer Phone: ${contract.customerPhone}
+      Customer Address: ${contract.customerAddress}
+      Package Name: ${contract.packageName}
+      Quantity: ${contract.quantity}
+      Total Price: ${contract.totalPrice}
+      
+      Company Name: ${contract.companyName}
+      Company Address: ${contract.companyAddress}
+      Business Number: ${contract.businessNumber}
+      Representative: ${contract.representative}
+    `;
+
+    fs.writeFileSync(filePath, content.trim());
+
+    return filePath;
   }
 }

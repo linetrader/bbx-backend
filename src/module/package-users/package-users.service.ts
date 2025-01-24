@@ -363,32 +363,6 @@ export class PackageUsersService implements OnModuleInit {
         throw new BadRequestException('Failed to create contract.');
       }
 
-      // const userPackage = await this.packageUsersModel.findOne({
-      //   userId: user.id,
-      //   packageType: selectedPackage.name,
-      // });
-
-      // if (!userPackage) {
-      //   const referrer = await this.usersService.findMyReferrerById(user.id);
-      //   if (!referrer) {
-      //     throw new BadRequestException('Not referrer');
-      //   }
-      //   const leaderName = await this.findMiningGroupLeaderName(
-      //     referrer,
-      //     selectedPackage.name,
-      //   );
-      //   const newUserPackage = new this.packageUsersModel({
-      //     userId: user.id,
-      //     groupLeaderName: leaderName,
-      //     referrerUserName: referrer,
-      //     walletId: myWallet.id,
-      //     packageType: selectedPackage.name,
-      //     quantity: 0.0,
-      //     miningBalance: 0.0,
-      //   });
-      //   await newUserPackage.save();
-      // }
-
       return `Successfully purchased ${quantity} of ${selectedPackage.name}.`;
     } catch (error) {
       const err =
@@ -431,7 +405,7 @@ export class PackageUsersService implements OnModuleInit {
         throw new BadRequestException('100 USDT or less');
       }
 
-      if (wallet.usdtBalance > amount) {
+      if (wallet.usdtBalance >= amount) {
         wallet.usdtBalance -= amount;
         await wallet.save();
         return true;
@@ -457,7 +431,7 @@ export class PackageUsersService implements OnModuleInit {
           throw new BadRequestException('100 USDT or less');
         }
 
-        if (myPackage.miningBalance > amount) {
+        if (myPackage.miningBalance >= amount) {
           myPackage.miningBalance -= amount;
           await myPackage.save();
           return true;

@@ -19,11 +19,16 @@ export class MiningLogsService {
     const now = new Date();
     const intervalStart = new Date(now.getTime() - interval);
 
+    const startOfDay = new Date(now);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(now);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
     const existingLog = await this.miningLogModel.findOne({
       userId,
       packageType,
-      startTime: { $lte: now },
-      endTime: { $gte: intervalStart },
+      startTime: { $gte: startOfDay, $lte: endOfDay },
     });
 
     if (existingLog) {

@@ -19,12 +19,31 @@ export class MiningLogsService {
     const now = new Date();
     const intervalStart = new Date(now.getTime() - interval);
 
-    const startOfDay = new Date(now);
-    startOfDay.setUTCHours(0, 0, 0, 0);
+    // 현재 날짜의 UTC 기준 시작/끝 시간
+    const startOfDay = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const endOfDay = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
 
-    const endOfDay = new Date(now);
-    endOfDay.setUTCHours(23, 59, 59, 999);
-
+    // 오늘 날짜의 기존 로그 조회
     const existingLog = await this.miningLogModel.findOne({
       userId,
       packageType,
@@ -32,19 +51,32 @@ export class MiningLogsService {
     });
 
     if (existingLog) {
-      existingLog.profit += profit;
-      existingLog.endTime = now;
-      await existingLog.save();
-    } else {
-      const newLog = new this.miningLogModel({
-        userId,
-        packageType,
-        profit,
-        startTime: intervalStart,
-        endTime: now,
-      });
-      await newLog.save();
+      // 기존 로그의 날짜가 오늘과 같은지 확인
+      const logDate = new Date(existingLog.startTime);
+      const isSameDay =
+        logDate.getUTCFullYear() === now.getUTCFullYear() &&
+        logDate.getUTCMonth() === now.getUTCMonth() &&
+        logDate.getUTCDate() === now.getUTCDate();
+
+      if (isSameDay) {
+        // 같은 날짜라면 기존 로그 업데이트
+        existingLog.profit += profit;
+        existingLog.endTime = now;
+        await existingLog.save();
+        return;
+      }
     }
+
+    // 기존 로그가 없거나 날짜가 변경된 경우 새로운 로그 생성
+    const newLog = new this.miningLogModel({
+      userId,
+      packageType,
+      profit,
+      startTime: intervalStart,
+      endTime: now,
+    });
+
+    await newLog.save();
   }
 
   async getMiningLogsByDate(userId: string, date: Date): Promise<MiningLog[]> {

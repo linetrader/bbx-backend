@@ -32,7 +32,7 @@ export class ContractsService implements OnModuleInit {
   async onModuleInit() {
     // 초기화 로직이 주석 처리되어 있음
     this.initializeDefaultContract();
-    this.saveContractAsPdf('6789fd34dd6683e327811cca');
+    //this.saveContractAsPdf('6789fd34dd6683e327811cca');
   }
 
   async confirmContract(contractId: string): Promise<boolean> {

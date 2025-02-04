@@ -136,7 +136,6 @@ type MiningLog {
   userId: String!
   packageType: String!
   profit: Float!
-  startTime: DateTime!
   endTime: DateTime!
   createdAt: DateTime!
   updatedAt: DateTime!

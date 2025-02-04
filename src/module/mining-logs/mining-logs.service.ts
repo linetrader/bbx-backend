@@ -14,10 +14,10 @@ export class MiningLogsService {
     userId: string,
     packageType: string,
     profit: number,
-    interval: number, // 간격 (밀리초 단위)
+    //interval: number, // 간격 (밀리초 단위)
   ): Promise<void> {
     const now = new Date();
-    const intervalStart = new Date(now.getTime() - interval);
+    //const intervalStart = new Date(now.getTime() - interval);
 
     // 현재 날짜의 UTC 기준 시작/끝 시간 (ISO 형식으로 변환)
     const startOfDay = new Date(
@@ -30,7 +30,7 @@ export class MiningLogsService {
         0,
         0,
       ),
-    ).toISOString();
+    );
     const endOfDay = new Date(
       Date.UTC(
         now.getUTCFullYear(),
@@ -41,22 +41,33 @@ export class MiningLogsService {
         59,
         999,
       ),
-    ).toISOString();
+    );
+
+    console.log(`Checking for existing log for user ${userId}`);
+    console.log(`Start of day: ${startOfDay}`);
+    console.log(`End of day: ${endOfDay}`);
 
     // MongoDB에서 UTC 기준으로 오늘 날짜의 기존 로그 조회
     const existingLog = await this.miningLogModel.findOne({
       userId,
       packageType,
-      startTime: { $gte: startOfDay, $lte: endOfDay },
+      endTime: { $gte: startOfDay, $lte: endOfDay },
     });
 
     if (existingLog) {
       // 기존 로그의 날짜가 오늘과 같은지 확인
-      const logDate = new Date(existingLog.startTime);
+      const logDate = existingLog.endTime;
       const isSameDay =
-        logDate.getUTCFullYear() === now.getUTCFullYear() &&
+        existingLog.endTime.getUTCFullYear() === now.getUTCFullYear() &&
         logDate.getUTCMonth() === now.getUTCMonth() &&
         logDate.getUTCDate() === now.getUTCDate();
+
+      // console.log('logdate year', logDate.getUTCFullYear());
+      // console.log('now year', now.getUTCFullYear());
+      // console.log('logdate month', logDate.getUTCMonth());
+      // console.log('now month', now.getUTCMonth());
+      // console.log('logdate date', logDate.getUTCDate());
+      // console.log('now date', now.getUTCDate());
 
       if (isSameDay) {
         console.log(`Updating existing log for user ${userId}`);
@@ -75,7 +86,7 @@ export class MiningLogsService {
       userId,
       packageType,
       profit,
-      startTime: intervalStart, // UTC 기준
+      //startTime: intervalStart, // UTC 기준
       endTime: now, // UTC 기준
     });
 

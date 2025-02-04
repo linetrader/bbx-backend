@@ -22,10 +22,6 @@ export class MiningLog extends Document {
 
   @Field(() => Date)
   @Prop({ required: true })
-  startTime!: Date; // 기록 시작 시간
-
-  @Field(() => Date)
-  @Prop({ required: true })
   endTime!: Date; // 기록 종료 시간
 
   @Field(() => Date)

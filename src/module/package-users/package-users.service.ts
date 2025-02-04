@@ -142,7 +142,7 @@ export class PackageUsersService implements OnModuleInit {
 
   async startMiningForPackage(miningInterval: number): Promise<void> {
     for (const packageName in this.packageData) {
-      const { name, miningProfit, logInterval } = this.packageData[packageName];
+      const { name, miningProfit } = this.packageData[packageName];
       const nowProfit = (miningProfit / (24 * 60 * 60)) * miningInterval;
 
       const packageUsers = await this.packageUsersModel
@@ -162,7 +162,7 @@ export class PackageUsersService implements OnModuleInit {
             packageUser.userId,
             packageUser.packageType,
             totalProfit,
-            logInterval,
+            //logInterval,
           );
         } catch (error) {
           console.error(

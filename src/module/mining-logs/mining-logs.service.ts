@@ -19,7 +19,7 @@ export class MiningLogsService {
     const now = new Date();
     const intervalStart = new Date(now.getTime() - interval);
 
-    // 현재 날짜의 UTC 기준 시작/끝 시간
+    // 현재 날짜의 UTC 기준 시작/끝 시간 (ISO 형식으로 변환)
     const startOfDay = new Date(
       Date.UTC(
         now.getUTCFullYear(),
@@ -30,7 +30,7 @@ export class MiningLogsService {
         0,
         0,
       ),
-    );
+    ).toISOString();
     const endOfDay = new Date(
       Date.UTC(
         now.getUTCFullYear(),
@@ -41,9 +41,9 @@ export class MiningLogsService {
         59,
         999,
       ),
-    );
+    ).toISOString();
 
-    // 오늘 날짜의 기존 로그 조회
+    // MongoDB에서 UTC 기준으로 오늘 날짜의 기존 로그 조회
     const existingLog = await this.miningLogModel.findOne({
       userId,
       packageType,
@@ -59,7 +59,9 @@ export class MiningLogsService {
         logDate.getUTCDate() === now.getUTCDate();
 
       if (isSameDay) {
-        // 같은 날짜라면 기존 로그 업데이트
+        console.log(`Updating existing log for user ${userId}`);
+
+        // 기존 로그 업데이트 (UTC 기준)
         existingLog.profit += profit;
         existingLog.endTime = now;
         await existingLog.save();
@@ -67,13 +69,14 @@ export class MiningLogsService {
       }
     }
 
+    console.log(`Creating new log for user ${userId}`);
     // 기존 로그가 없거나 날짜가 변경된 경우 새로운 로그 생성
     const newLog = new this.miningLogModel({
       userId,
       packageType,
       profit,
-      startTime: intervalStart,
-      endTime: now,
+      startTime: intervalStart, // UTC 기준
+      endTime: now, // UTC 기준
     });
 
     await newLog.save();
@@ -112,35 +115,14 @@ export class MiningLogsService {
     userId: string,
     limit: number,
     offset: number,
-  ): Promise<{ date: Date; profit: number; packageType: string }[]> {
+  ): Promise<MiningLog[]> {
     const logs = await this.miningLogModel
       .find({ userId })
-      .sort({ startTime: 1 })
+      .sort({ startTime: -1 })
       .skip(offset)
       .limit(limit)
       .exec();
 
-    const groupedLogs = logs.reduce(
-      (
-        acc: {
-          [key: string]: { date: Date; profit: number; packageType: string };
-        },
-        log,
-      ) => {
-        const date = new Date(log.startTime);
-        date.setUTCHours(0, 0, 0, 0);
-        const dateString = date.toISOString();
-
-        if (!acc[dateString]) {
-          acc[dateString] = { date, profit: 0, packageType: log.packageType };
-        }
-
-        acc[dateString].profit += log.profit;
-        return acc;
-      },
-      {},
-    );
-
-    return Object.values(groupedLogs);
+    return logs;
   }
 }

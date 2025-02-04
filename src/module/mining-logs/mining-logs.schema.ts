@@ -36,15 +36,3 @@ export class MiningLog extends Document {
 }
 
 export const MiningLogSchema = SchemaFactory.createForClass(MiningLog);
-
-@ObjectType()
-export class MiningLogGroupedByDay {
-  @Field()
-  packageType!: string;
-
-  @Field(() => Date)
-  date!: Date;
-
-  @Field(() => Number)
-  profit!: number;
-}

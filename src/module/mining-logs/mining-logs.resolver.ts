@@ -2,7 +2,6 @@ import { Resolver, Query, Args, Context, Int } from '@nestjs/graphql';
 import { MiningLogsService } from './mining-logs.service';
 import { MiningLog } from './mining-logs.schema';
 import { UnauthorizedException } from '@nestjs/common';
-import { MiningLogGroupedByDay } from './mining-logs.schema';
 
 @Resolver()
 export class MiningLogsResolver {
@@ -31,12 +30,12 @@ export class MiningLogsResolver {
     return this.miningLogsService.get24HourMiningProfit(user.id);
   }
 
-  @Query(() => [MiningLogGroupedByDay])
+  @Query(() => [MiningLog])
   async getAllMiningLogsGroupedByDay(
     @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number,
     @Args('offset', { type: () => Int, defaultValue: 0 }) offset: number,
     @Context() context: any,
-  ): Promise<MiningLogGroupedByDay[]> {
+  ): Promise<MiningLog[]> {
     const user = context.req.user;
     if (!user) {
       throw new UnauthorizedException('Unauthorized: User not authenticated.');

@@ -129,7 +129,7 @@ export class MiningLogsService {
   ): Promise<MiningLog[]> {
     const logs = await this.miningLogModel
       .find({ userId })
-      .sort({ startTime: -1 })
+      .sort({ endTime: -1 })
       .skip(offset)
       .limit(limit)
       .exec();

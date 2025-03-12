@@ -277,6 +277,9 @@ type Mutation {
 
   """Update user details"""
   updateUser(userId: String!, username: String, firstname: String, lastname: String, email: String, status: String, referrer: String, userLevel: Int): String!
+
+  """Change user password"""
+  changePassword(newPassword: String!): String!
   createWallet: Wallet!
   saveWithdrawAddress(newAddress: String!, otp: String!): Boolean!
 

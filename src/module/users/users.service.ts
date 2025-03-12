@@ -248,4 +248,27 @@ export class UsersService implements OnModuleInit {
     const users = await this.userModel.find({}, '_id').exec();
     return users.map((user) => user.id.toString());
   }
+
+  async changePassword(userId: string, newPassword: string): Promise<string> {
+    // 1️⃣ 사용자 정보 가져오기
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // 2️⃣ 현재 비밀번호 검증
+    // const isPasswordValid = await bcrypt.compare(
+    //   currentPassword,
+    //   user.password,
+    // );
+    // if (!isPasswordValid) {
+    //   throw new UnauthorizedException('Current password is incorrect');
+    // }
+
+    // 3️⃣ 새 비밀번호 해싱 후 저장
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return 'Password changed successfully!';
+  }
 }

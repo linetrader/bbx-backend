@@ -109,4 +109,19 @@ export class UsersResolver {
       userLevel,
     });
   }
+
+  @Mutation(() => String, { description: 'Change user password' })
+  async changePassword(
+    @Context() context: any,
+    @Args('newPassword') newPassword: string,
+  ): Promise<string> {
+    // 1️⃣ 인증된 사용자 가져오기
+    const user = context.req.user;
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    // 2️⃣ 서비스 메서드 호출하여 비밀번호 변경
+    return this.usersService.changePassword(user.id, newPassword);
+  }
 }
